@@ -6,9 +6,9 @@ import { formatHour } from "./formatHour.ts";
 import { useElementWidth } from "./useElementWidth.ts";
 
 const HEIGHT = 300;
-const PAD = { top: 16, right: 12, bottom: 28, left: 40 };
-/** Relative-hour gridlines; "now" (0) is drawn separately as the centre marker. */
-const X_TICKS = [-12, -6, 6, 12];
+const PAD = { top: 16, right: 4, bottom: 28, left: 40 };
+/** Relative-hour ticks, including 0 (the now hour) at centre. */
+const X_TICKS = [-12, -6, 0, 6, 12];
 
 /** Signed hours from now (−12…+12) for a clock hour, given the centre hour.
  * Both edges (−12 and +12) map to the same clock hour, half a day from now. */
@@ -28,24 +28,24 @@ type RelPoint = { rel: number; value: number };
 export function OverlayChart(props: {
   series: DaySeries[];
   value: (reading: HourReading) => number;
+  format: (value: number) => string;
   unitSymbol: string;
   axisSuffix: string;
   clampZero: boolean;
   domain?: [number, number];
   currentHour: number;
   hiddenOffsets: Set<number>;
-  onToggleDay: (offset: number) => void;
 }) {
   const {
     series,
     value,
+    format,
     unitSymbol,
     axisSuffix,
     clampZero,
     domain,
     currentHour,
     hiddenOffsets,
-    onToggleDay,
   } = props;
   const { ref, width } = useElementWidth();
   const [hoverRel, setHoverRel] = useState<number | null>(null);
@@ -136,8 +136,7 @@ export function OverlayChart(props: {
           .sort((a, b) => b.day.offset - a.day.offset);
 
   return (
-    <div className="flex flex-col gap-3">
-      <div ref={ref} className="relative w-full" style={{ height: HEIGHT }}>
+    <div ref={ref} className="relative w-full" style={{ height: HEIGHT }}>
         {width > 0 && (
           <svg
             width={width}
@@ -265,8 +264,8 @@ export function OverlayChart(props: {
                     style={{ backgroundColor: row.style.color }}
                   />
                   <span className="w-20 text-slate-400">{row.day.label}</span>
-                  <span className="font-semibold tabular-nums text-slate-100">
-                    {Math.round(row.value)}
+                  <span className="whitespace-nowrap font-semibold tabular-nums text-slate-100">
+                    {format(row.value)}
                     {unitSymbol}
                   </span>
                 </div>
@@ -275,34 +274,5 @@ export function OverlayChart(props: {
           </div>
         )}
       </div>
-
-      <div className="flex flex-wrap gap-2">
-        {series.map((day) => {
-          const style = dayColor(day.offset);
-          const hidden = hiddenOffsets.has(day.offset);
-          return (
-            <button
-              key={day.dateKey}
-              type="button"
-              onClick={() => onToggleDay(day.offset)}
-              className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
-                hidden
-                  ? "border-white/5 bg-transparent text-slate-500"
-                  : "border-white/10 bg-white/5 text-slate-200"
-              }`}
-            >
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{
-                  backgroundColor: hidden ? "#475569" : style.color,
-                  opacity: hidden ? 0.5 : style.opacity,
-                }}
-              />
-              {day.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
   );
 }

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { DayLegend } from "../chart/DayLegend.tsx";
 import { OverlayChart } from "../chart/OverlayChart.tsx";
 import { TemperatureGrid } from "../chart/TemperatureGrid.tsx";
 import { VariableTabs } from "../chart/VariableTabs.tsx";
@@ -43,7 +44,7 @@ export function App() {
 
       <main className="flex flex-col gap-10">
         <section>
-          <div className="mb-4 flex items-center gap-2">
+          <div className="mb-4 flex items-center justify-between gap-3">
             <MetricToggle value={metric} onChange={setMetric} />
             <UnitToggle value={unit} onChange={setUnit} />
           </div>
@@ -83,30 +84,30 @@ export function App() {
         </section>
 
         {data && (
-          <div className="flex flex-col gap-8">
-            <section>
-              <div className="mb-3 -ml-3">
+          <div className="flex flex-col gap-12">
+            <section className="flex flex-col gap-3">
+              <div className="flex justify-center">
                 <VariableTabs value={variable} onChange={setVariable} />
               </div>
+              <DayLegend
+                series={series}
+                hiddenOffsets={hiddenOffsets}
+                onToggle={toggleOffset}
+              />
               <OverlayChart
                 series={series}
                 value={view.value}
+                format={view.format}
                 unitSymbol={view.unitSymbol}
                 axisSuffix={view.axisSuffix}
                 clampZero={view.clampZero}
                 domain={view.domain}
                 currentHour={data.current.hour}
                 hiddenOffsets={hiddenOffsets}
-                onToggleDay={toggleOffset}
               />
             </section>
 
             <section>
-              <div className="mb-3">
-                <h2 className="text-sm font-medium text-slate-300">
-                  Compared to today
-                </h2>
-              </div>
               <TemperatureGrid
                 series={series}
                 metric={metric}

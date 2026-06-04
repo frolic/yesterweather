@@ -21,7 +21,7 @@ type RawResponse = {
     temperature_2m: number[];
     apparent_temperature: number[];
     wind_speed_10m: number[];
-    precipitation_probability: number[];
+    precipitation: number[];
   };
 };
 
@@ -51,7 +51,7 @@ export async function fetchForecast(options: {
     latitude: String(latitude),
     longitude: String(longitude),
     hourly:
-      "temperature_2m,apparent_temperature,wind_speed_10m,precipitation_probability",
+      "temperature_2m,apparent_temperature,wind_speed_10m,precipitation",
     current:
       "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code",
     temperature_unit: unit,
@@ -74,7 +74,7 @@ export async function fetchForecast(options: {
     actual: raw.hourly.temperature_2m[index],
     feels: raw.hourly.apparent_temperature[index],
     windSpeed: raw.hourly.wind_speed_10m[index],
-    precipProbability: raw.hourly.precipitation_probability[index],
+    precipitation: raw.hourly.precipitation[index],
   }));
 
   return {

@@ -16,8 +16,8 @@ export type HourReading = {
   actual: number;
   feels: number;
   windSpeed: number;
-  /** Chance of precipitation, 0–100. */
-  precipProbability: number;
+  /** Precipitation amount for the hour, in mm. */
+  precipitation: number;
 };
 
 /** Current "right now" conditions for the header. */

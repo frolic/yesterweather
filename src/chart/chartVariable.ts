@@ -8,12 +8,16 @@ export type ChartVariable = "temperature" | "wind" | "rain";
  * and whether the y-axis should be floored at zero. */
 export type ChartView = {
   value: (reading: HourReading) => number;
+  /** Formats a value for the tooltip (e.g. integer degrees, one-decimal mm). */
+  format: (value: number) => string;
   unitSymbol: string;
   axisSuffix: string;
   clampZero: boolean;
   /** Fixed y-axis range; when omitted the chart auto-fits to the data. */
   domain?: [number, number];
 };
+
+const rounded = (value: number) => String(Math.round(value));
 
 export function chartView(options: {
   variable: ChartVariable;
@@ -26,6 +30,7 @@ export function chartView(options: {
   if (variable === "wind") {
     return {
       value: (reading) => reading.windSpeed,
+      format: rounded,
       unitSymbol: unit === "fahrenheit" ? " mph" : " km/h",
       axisSuffix: "",
       clampZero: true,
@@ -34,16 +39,17 @@ export function chartView(options: {
 
   if (variable === "rain") {
     return {
-      value: (reading) => reading.precipProbability,
-      unitSymbol: "%",
-      axisSuffix: "%",
+      value: (reading) => reading.precipitation,
+      format: (value) => value.toFixed(1),
+      unitSymbol: " mm",
+      axisSuffix: "mm",
       clampZero: true,
-      domain: [0, 100],
     };
   }
 
   return {
     value: (reading) => reading[metric],
+    format: rounded,
     unitSymbol: temperatureUnit,
     axisSuffix: "°",
     clampZero: false,

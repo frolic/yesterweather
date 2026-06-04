@@ -52,28 +52,23 @@ export function PlaceSearch(props: {
 
   return (
     <div ref={containerRef} className="relative">
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
-            📍
-          </span>
-          <input
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setOpen(true);
-            }}
-            onFocus={() => setOpen(true)}
-            placeholder={place.name}
-            className="w-full rounded-full border border-white/10 bg-white/5 py-2.5 pl-9 pr-4 text-sm text-slate-100 placeholder:text-slate-400 focus:border-amber-400/60 focus:outline-none"
-          />
-        </div>
+      <div className="relative">
+        <input
+          value={query}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          placeholder={place.name}
+          className="w-full rounded-full border border-white/10 bg-white/5 py-2.5 pl-4 pr-12 text-sm text-slate-100 placeholder:text-slate-400 focus:border-amber-400/60 focus:outline-none"
+        />
         <button
           type="button"
           onClick={onLocate}
           disabled={locating}
           aria-label="Use my location"
-          className="flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2.5 text-slate-200 transition hover:bg-white/10 disabled:opacity-50"
+          className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:bg-white/10 hover:text-slate-200 disabled:opacity-50"
         >
           {locating ? (
             <span className="text-sm">…</span>

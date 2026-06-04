@@ -5,29 +5,33 @@ const OPTIONS: { value: Unit; label: string }[] = [
   { value: "fahrenheit", label: "°F" },
 ];
 
-/** Segmented control switching between Celsius and Fahrenheit. Uses a neutral
- * active style so the amber accent stays reserved for the primary metric toggle. */
+/** On/off switch between Celsius and Fahrenheit — clicking anywhere flips it.
+ * Neutral active style keeps the amber accent reserved for the metric toggle. */
 export function UnitToggle(props: {
   value: Unit;
   onChange: (unit: Unit) => void;
 }) {
+  const next: Unit = props.value === "celsius" ? "fahrenheit" : "celsius";
   return (
-    <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1 text-sm">
+    <button
+      type="button"
+      onClick={() => props.onChange(next)}
+      aria-label="Toggle Celsius or Fahrenheit"
+      className="inline-flex rounded-full border border-white/10 bg-white/5 p-1 text-sm"
+    >
       {OPTIONS.map((option) => {
         const active = option.value === props.value;
         return (
-          <button
+          <span
             key={option.value}
-            type="button"
-            onClick={() => props.onChange(option.value)}
             className={`rounded-full px-3 py-1.5 font-medium transition ${
-              active ? "bg-white/15 text-white" : "text-slate-400 hover:text-white"
+              active ? "bg-white/15 text-white" : "text-slate-400"
             }`}
           >
             {option.label}
-          </button>
+          </span>
         );
       })}
-    </div>
+    </button>
   );
 }
