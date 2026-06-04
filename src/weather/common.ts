@@ -2,6 +2,9 @@
  * (wind chill / humidity adjusted), which is the headline metric. */
 export type Metric = "feels" | "actual";
 
+/** Temperature unit system, as accepted by the Open-Meteo API. */
+export type Unit = "celsius" | "fahrenheit";
+
 /** A single hourly reading, with the local clock hour pre-parsed for overlaying. */
 export type HourReading = {
   /** Local time ISO string from the API, e.g. "2026-06-02T14:00". */
@@ -12,6 +15,9 @@ export type HourReading = {
   dateKey: string;
   actual: number;
   feels: number;
+  windSpeed: number;
+  /** Chance of precipitation, 0–100. */
+  precipProbability: number;
 };
 
 /** Current "right now" conditions for the header. */

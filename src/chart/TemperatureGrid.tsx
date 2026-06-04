@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useRef } from "react";
+import { Fragment, useMemo } from "react";
 import type { DaySeries, Metric } from "../weather/common.ts";
 import { buildDiffGrid } from "./diffGrid.ts";
 import { formatHour } from "./formatHour.ts";
@@ -24,39 +24,25 @@ export function TemperatureGrid(props: {
   currentHour: number;
 }) {
   const grid = useMemo(
-    () => buildDiffGrid(props.series, props.metric),
-    [props.series, props.metric],
+    () => buildDiffGrid(props.series, props.metric, props.currentHour),
+    [props.series, props.metric, props.currentHour],
   );
-  const containerRef = useRef<HTMLDivElement>(null);
-  const nowRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const container = containerRef.current;
-    const now = nowRef.current;
-    if (container && now) {
-      container.scrollTop = now.offsetTop - container.clientHeight / 2;
-    }
-  }, [grid]);
-
   if (!grid) return null;
   const { days, rows, maxAbs } = grid;
   const todayLabel = days.find((day) => day.offset === 0)?.label ?? "today";
 
   return (
     <div className="flex flex-col gap-3">
-      <div
-        ref={containerRef}
-        className="relative max-h-[360px] overflow-y-auto rounded-xl border border-white/5"
-      >
+      <div className="overflow-hidden rounded-xl border border-white/5">
         <div
           className="grid text-center text-xs"
           style={{ gridTemplateColumns: `44px repeat(${days.length}, 1fr)` }}
         >
-          <div className="sticky top-0 z-10 bg-slate-900/95 py-2 backdrop-blur" />
+          <div className="bg-slate-900/95 py-2" />
           {days.map((day) => (
             <div
               key={day.dateKey}
-              className={`sticky top-0 z-10 bg-slate-900/95 py-2 font-medium backdrop-blur ${
+              className={`bg-slate-900/95 py-2 font-medium ${
                 day.offset === 0 ? "text-amber-300" : "text-slate-300"
               }`}
             >
@@ -69,7 +55,6 @@ export function TemperatureGrid(props: {
             return (
               <Fragment key={row.hour}>
                 <div
-                  ref={isNow ? nowRef : undefined}
                   className={`py-1.5 pr-1.5 text-right tabular-nums ${
                     isNow ? "font-semibold text-white" : "text-slate-500"
                   }`}

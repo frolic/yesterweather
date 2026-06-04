@@ -54,6 +54,9 @@ export function PlaceSearch(props: {
     <div ref={containerRef} className="relative">
       <div className="flex items-center gap-2">
         <div className="relative flex-1">
+          <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">
+            📍
+          </span>
           <input
             value={query}
             onChange={(event) => {
@@ -62,7 +65,7 @@ export function PlaceSearch(props: {
             }}
             onFocus={() => setOpen(true)}
             placeholder={place.name}
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-slate-100 placeholder:text-slate-400 focus:border-amber-400/60 focus:outline-none"
+            className="w-full rounded-full border border-white/10 bg-white/5 py-2.5 pl-9 pr-4 text-sm text-slate-100 placeholder:text-slate-400 focus:border-amber-400/60 focus:outline-none"
           />
         </div>
         <button
@@ -70,9 +73,25 @@ export function PlaceSearch(props: {
           onClick={onLocate}
           disabled={locating}
           aria-label="Use my location"
-          className="shrink-0 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5 text-lg transition hover:bg-white/10 disabled:opacity-50"
+          className="flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 px-3 py-2.5 text-slate-200 transition hover:bg-white/10 disabled:opacity-50"
         >
-          {locating ? "…" : "📍"}
+          {locating ? (
+            <span className="text-sm">…</span>
+          ) : (
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-5 w-5"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+            </svg>
+          )}
         </button>
       </div>
 

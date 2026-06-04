@@ -19,13 +19,15 @@ export type DiffGrid = {
 };
 
 /**
- * Builds the hours × days matrix of temperature differences relative to today
- * at the same clock hour, on the active metric. Today's column is all-zero (the
- * baseline). Returns null when today isn't present in the series.
+ * Builds the hours × days matrix of temperatures, with each cell's delta versus
+ * today at the same clock hour driving its colour. Rows are ordered around now
+ * (−12h … now … +11h) so the current hour sits in the middle. Today's column is
+ * the all-zero baseline. Returns null when today isn't present in the series.
  */
 export function buildDiffGrid(
   series: DaySeries[],
   metric: Metric,
+  currentHour: number,
 ): DiffGrid | null {
   const today = series.find((day) => day.offset === 0);
   if (!today) return null;
@@ -43,7 +45,8 @@ export function buildDiffGrid(
 
   let actualMax = 0;
   const rows: DiffRow[] = [];
-  for (let hour = 0; hour < 24; hour += 1) {
+  for (let rel = -12; rel <= 11; rel += 1) {
+    const hour = (((currentHour + rel) % 24) + 24) % 24;
     const reference = todayByHour.get(hour);
     const cells = series.map((day) => {
       const raw = day.readings.find((reading) => reading.hour === hour)?.[metric];

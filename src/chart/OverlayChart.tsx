@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { curveMonotoneX, line } from "d3-shape";
-import type { DaySeries, Metric } from "../weather/common.ts";
+import type { DaySeries, HourReading } from "../weather/common.ts";
 import { dayColor, type DayStyle } from "./dayColor.ts";
 import { formatHour } from "./formatHour.ts";
 import { useElementWidth } from "./useElementWidth.ts";
@@ -18,26 +18,39 @@ const toRel = (hour: number, center: number) =>
 type RelPoint = { rel: number; value: number };
 
 /**
- * Overlays each day's hourly temperatures on one shared axis centred on right
+ * Overlays each day's chosen hourly variable on one shared axis centred on right
  * now (−12h … now … +12h), so every day's curve is aligned by time-of-day and
- * today reads against the days you just lived through. Rendered as hand-built
- * SVG (only d3-shape's curve generator is borrowed); tapping a legend chip hides
- * a day, and hovering reveals every visible day's value at that hour.
+ * today reads against the days you just lived through. The plotted value is
+ * supplied via `value`, so the same chart serves temperature, wind, and rain.
+ * Rendered as hand-built SVG (only d3-shape's curve generator is borrowed);
+ * tapping a legend chip hides a day, hovering reveals every visible day's value.
  */
-export function TemperatureChart(props: {
+export function OverlayChart(props: {
   series: DaySeries[];
-  metric: Metric;
+  value: (reading: HourReading) => number;
   unitSymbol: string;
+  axisSuffix: string;
+  clampZero: boolean;
+  domain?: [number, number];
   currentHour: number;
-  hiddenDays: Set<string>;
-  onToggleDay: (dateKey: string) => void;
+  hiddenOffsets: Set<number>;
+  onToggleDay: (offset: number) => void;
 }) {
-  const { series, metric, unitSymbol, currentHour, hiddenDays, onToggleDay } =
-    props;
+  const {
+    series,
+    value,
+    unitSymbol,
+    axisSuffix,
+    clampZero,
+    domain,
+    currentHour,
+    hiddenOffsets,
+    onToggleDay,
+  } = props;
   const { ref, width } = useElementWidth();
   const [hoverRel, setHoverRel] = useState<number | null>(null);
 
-  const visible = series.filter((day) => !hiddenDays.has(day.dateKey));
+  const visible = series.filter((day) => !hiddenOffsets.has(day.offset));
   const plotWidth = Math.max(0, width - PAD.left - PAD.right);
   const plotHeight = HEIGHT - PAD.top - PAD.bottom;
 
@@ -45,20 +58,25 @@ export function TemperatureChart(props: {
   let max = -Infinity;
   for (const day of visible) {
     for (const reading of day.readings) {
-      if (reading[metric] < min) min = reading[metric];
-      if (reading[metric] > max) max = reading[metric];
+      const current = value(reading);
+      if (current < min) min = current;
+      if (current > max) max = current;
     }
   }
   if (!Number.isFinite(min)) {
     min = 0;
     max = 20;
   }
-  const yMin = Math.floor(min) - 2;
-  const yMax = Math.ceil(max) + 2;
+  const yMin = domain
+    ? domain[0]
+    : clampZero
+      ? Math.max(0, Math.floor(min) - 2)
+      : Math.floor(min) - 2;
+  const yMax = domain ? domain[1] : Math.ceil(max) + 2;
 
   const xPos = (rel: number) => PAD.left + ((rel + 12) / 24) * plotWidth;
-  const yPos = (value: number) =>
-    PAD.top + (1 - (value - yMin) / (yMax - yMin)) * plotHeight;
+  const yPos = (reading: number) =>
+    PAD.top + (1 - (reading - yMin) / (yMax - yMin)) * plotHeight;
 
   const buildLine = line<RelPoint>()
     .x((point) => xPos(point.rel))
@@ -70,16 +88,21 @@ export function TemperatureChart(props: {
   const toPoints = (day: DaySeries): RelPoint[] => {
     const points = day.readings.map((reading) => ({
       rel: toRel(reading.hour, currentHour),
-      value: reading[metric],
+      value: value(reading),
     }));
     const edge = points.find((point) => point.rel === -12);
     if (edge) points.push({ rel: 12, value: edge.value });
     return points.sort((a, b) => a.rel - b.rel);
   };
 
-  const yTicks = Array.from({ length: 5 }, (_, index) =>
-    Math.round(yMin + ((yMax - yMin) / 4) * index),
-  );
+  // De-duplicate so a small range (e.g. a flat 0% rain day) can't repeat a tick.
+  const yTicks = [
+    ...new Set(
+      Array.from({ length: 5 }, (_, index) =>
+        Math.round(yMin + ((yMax - yMin) / 4) * index),
+      ),
+    ),
+  ];
 
   const onPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
     if (plotWidth <= 0) return;
@@ -96,13 +119,16 @@ export function TemperatureChart(props: {
     hoverClockHour == null
       ? []
       : visible
-          .map((day) => ({
-            day,
-            value: day.readings.find(
-              (reading) => reading.hour === hoverClockHour,
-            )?.[metric],
-            style: dayColor(day.offset),
-          }))
+          .map((day) => {
+            const reading = day.readings.find(
+              (entry) => entry.hour === hoverClockHour,
+            );
+            return {
+              day,
+              value: reading == null ? null : value(reading),
+              style: dayColor(day.offset),
+            };
+          })
           .filter(
             (row): row is { day: DaySeries; value: number; style: DayStyle } =>
               row.value != null,
@@ -139,7 +165,7 @@ export function TemperatureChart(props: {
                   fontSize={12}
                 >
                   {tick}
-                  {unitSymbol}
+                  {axisSuffix}
                 </text>
               </g>
             ))}
@@ -253,12 +279,12 @@ export function TemperatureChart(props: {
       <div className="flex flex-wrap gap-2">
         {series.map((day) => {
           const style = dayColor(day.offset);
-          const hidden = hiddenDays.has(day.dateKey);
+          const hidden = hiddenOffsets.has(day.offset);
           return (
             <button
               key={day.dateKey}
               type="button"
-              onClick={() => onToggleDay(day.dateKey)}
+              onClick={() => onToggleDay(day.offset)}
               className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
                 hidden
                   ? "border-white/5 bg-transparent text-slate-500"

@@ -1,4 +1,4 @@
-import type { Forecast, HourReading } from "./common.ts";
+import type { Forecast, HourReading, Unit } from "./common.ts";
 
 const ENDPOINT = "https://api.open-meteo.com/v1/forecast";
 
@@ -20,6 +20,8 @@ type RawResponse = {
     time: string[];
     temperature_2m: number[];
     apparent_temperature: number[];
+    wind_speed_10m: number[];
+    precipitation_probability: number[];
   };
 };
 
@@ -31,7 +33,7 @@ type RawResponse = {
 export async function fetchForecast(options: {
   latitude: number;
   longitude: number;
-  unit: "celsius" | "fahrenheit";
+  unit: Unit;
   pastDays?: number;
   forecastDays?: number;
   signal?: AbortSignal;
@@ -48,7 +50,8 @@ export async function fetchForecast(options: {
   const params = new URLSearchParams({
     latitude: String(latitude),
     longitude: String(longitude),
-    hourly: "temperature_2m,apparent_temperature",
+    hourly:
+      "temperature_2m,apparent_temperature,wind_speed_10m,precipitation_probability",
     current:
       "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code",
     temperature_unit: unit,
@@ -70,6 +73,8 @@ export async function fetchForecast(options: {
     dateKey: dateKeyOf(time),
     actual: raw.hourly.temperature_2m[index],
     feels: raw.hourly.apparent_temperature[index],
+    windSpeed: raw.hourly.wind_speed_10m[index],
+    precipProbability: raw.hourly.precipitation_probability[index],
   }));
 
   return {

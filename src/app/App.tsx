@@ -1,22 +1,24 @@
 import { useMemo, useState } from "react";
-import { TemperatureChart } from "../chart/TemperatureChart.tsx";
+import { OverlayChart } from "../chart/OverlayChart.tsx";
 import { TemperatureGrid } from "../chart/TemperatureGrid.tsx";
+import { VariableTabs } from "../chart/VariableTabs.tsx";
+import { chartView, type ChartVariable } from "../chart/chartVariable.ts";
+import { useHiddenOffsets } from "../chart/useHiddenOffsets.ts";
 import { PlaceSearch } from "../location/PlaceSearch.tsx";
 import { useLocation } from "../location/useLocation.ts";
-import type { Metric } from "../weather/common.ts";
 import { buildInsight } from "../weather/buildInsight.ts";
 import { CurrentConditions } from "../weather/CurrentConditions.tsx";
 import { groupByDay } from "../weather/groupByDay.ts";
 import { MetricToggle } from "../weather/MetricToggle.tsx";
+import { UnitToggle } from "../weather/UnitToggle.tsx";
+import { useDisplaySettings } from "../weather/useDisplaySettings.ts";
 import { useForecast } from "../weather/useForecast.ts";
-
-type Unit = "celsius" | "fahrenheit";
 
 export function App() {
   const { place, setPlace, locate, locating } = useLocation();
-  const [unit, setUnit] = useState<Unit>("celsius");
-  const [metric, setMetric] = useState<Metric>("feels");
-  const [hiddenDays, setHiddenDays] = useState<Set<string>>(new Set());
+  const { metric, unit, setMetric, setUnit } = useDisplaySettings();
+  const { hiddenOffsets, toggleOffset } = useHiddenOffsets();
+  const [variable, setVariable] = useState<ChartVariable>("temperature");
 
   const { data, loading, error } = useForecast(place, unit);
 
@@ -26,38 +28,12 @@ export function App() {
     [data, metric],
   );
 
-  const toggleDay = (dateKey: string) =>
-    setHiddenDays((prev) => {
-      const next = new Set(prev);
-      next.has(dateKey) ? next.delete(dateKey) : next.add(dateKey);
-      return next;
-    });
-
   const unitSymbol = data?.temperatureUnit ?? "°C";
   const windUnit = unit === "fahrenheit" ? "mph" : "km/h";
-  const dayRange = series.length
-    ? `past ${-series[0].offset} → next ${series[series.length - 1].offset} days`
-    : "";
-  const metricLabel = metric === "feels" ? "feels like" : "actual";
+  const view = chartView({ variable, metric, unit, temperatureUnit: unitSymbol });
 
   return (
     <div className="mx-auto flex min-h-full w-full max-w-md flex-col gap-4 px-4 pb-10 pt-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Yesterweather</h1>
-          <p className="text-xs text-slate-400">
-            Today, against the days you just felt.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setUnit((u) => (u === "celsius" ? "fahrenheit" : "celsius"))}
-          className="rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-white/10"
-        >
-          {unit === "celsius" ? "°C" : "°F"}
-        </button>
-      </header>
-
       <PlaceSearch
         place={place}
         onSelect={setPlace}
@@ -65,13 +41,11 @@ export function App() {
         locating={locating}
       />
 
-      <main className="flex flex-col gap-4">
-        <section className="rounded-2xl border border-white/10 bg-gradient-to-b from-white/[0.07] to-white/[0.02] p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-300">
-              {place.name}
-            </span>
+      <main className="flex flex-col gap-10">
+        <section>
+          <div className="mb-4 flex items-center gap-2">
             <MetricToggle value={metric} onChange={setMetric} />
+            <UnitToggle value={unit} onChange={setUnit} />
           </div>
 
           {error && (
@@ -92,47 +66,46 @@ export function App() {
               windUnit={windUnit}
             />
           )}
+
+          {insight && (
+            <p
+              className={`mt-4 border-l-2 pl-3 text-sm leading-relaxed ${
+                insight.delta < 0
+                  ? "border-sky-400/60 text-sky-200"
+                  : insight.delta > 0
+                    ? "border-amber-400/60 text-amber-200"
+                    : "border-white/20 text-slate-300"
+              }`}
+            >
+              {insight.message}
+            </p>
+          )}
         </section>
 
-        {insight && (
-          <div
-            className={`rounded-2xl border px-5 py-4 text-sm leading-relaxed ${
-              insight.delta < 0
-                ? "border-sky-400/20 bg-sky-400/[0.06] text-sky-100"
-                : insight.delta > 0
-                  ? "border-amber-400/20 bg-amber-400/[0.06] text-amber-100"
-                  : "border-white/10 bg-white/5 text-slate-200"
-            }`}
-          >
-            {insight.message}
-          </div>
-        )}
-
         {data && (
-          <>
-            <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="mb-3 flex items-baseline justify-between">
-                <h2 className="text-sm font-medium text-slate-300">
-                  Hourly · {metricLabel}
-                </h2>
-                <span className="text-xs text-slate-500">{dayRange}</span>
+          <div className="flex flex-col gap-8">
+            <section>
+              <div className="mb-3 -ml-3">
+                <VariableTabs value={variable} onChange={setVariable} />
               </div>
-              <TemperatureChart
+              <OverlayChart
                 series={series}
-                metric={metric}
-                unitSymbol={unitSymbol}
+                value={view.value}
+                unitSymbol={view.unitSymbol}
+                axisSuffix={view.axisSuffix}
+                clampZero={view.clampZero}
+                domain={view.domain}
                 currentHour={data.current.hour}
-                hiddenDays={hiddenDays}
-                onToggleDay={toggleDay}
+                hiddenOffsets={hiddenOffsets}
+                onToggleDay={toggleOffset}
               />
             </section>
 
-            <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-              <div className="mb-3 flex items-baseline justify-between">
+            <section>
+              <div className="mb-3">
                 <h2 className="text-sm font-medium text-slate-300">
-                  Grid · {metricLabel}
+                  Compared to today
                 </h2>
-                <span className="text-xs text-slate-500">shaded vs today</span>
               </div>
               <TemperatureGrid
                 series={series}
@@ -140,7 +113,7 @@ export function App() {
                 currentHour={data.current.hour}
               />
             </section>
-          </>
+          </div>
         )}
       </main>
 

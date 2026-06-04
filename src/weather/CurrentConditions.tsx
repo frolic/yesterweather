@@ -26,7 +26,6 @@ export function CurrentConditions(props: {
           </span>
         </div>
         <div className="mt-1 text-sm text-slate-400">
-          {metric === "feels" ? "Feels like now" : "Actual now"} ·{" "}
           {secondaryLabel} {Math.round(secondary)}
           {unitSymbol}
         </div>

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Place } from "../location/common.ts";
-import type { Forecast } from "./common.ts";
+import type { Forecast, Unit } from "./common.ts";
 import { fetchForecast } from "./fetchForecast.ts";
 
 type ForecastState = {
@@ -13,7 +13,7 @@ type ForecastState = {
  * Loads the forecast for a place + unit, cancelling in-flight requests when the
  * inputs change so the latest selection always wins.
  */
-export function useForecast(place: Place, unit: "celsius" | "fahrenheit") {
+export function useForecast(place: Place, unit: Unit) {
   const [state, setState] = useState<ForecastState>({
     data: null,
     loading: true,
