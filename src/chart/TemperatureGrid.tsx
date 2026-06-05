@@ -12,6 +12,21 @@ const cellBackground = (delta: number, maxAbs: number) => {
     : `rgba(59, 130, 246, ${intensity})`;
 };
 
+const NOW_RING = "rgba(255, 255, 255, 0.3)";
+
+/** Inset edge lines that form a single outline around the "now" row: top and
+ * bottom on every cell, plus left/right only on the first/last so there are no
+ * internal dividers. */
+const nowRowRing = (columnIndex: number, count: number) =>
+  [
+    `inset 0 1px 0 ${NOW_RING}`,
+    `inset 0 -1px 0 ${NOW_RING}`,
+    columnIndex === 0 ? `inset 1px 0 0 ${NOW_RING}` : "",
+    columnIndex === count - 1 ? `inset -1px 0 0 ${NOW_RING}` : "",
+  ]
+    .filter(Boolean)
+    .join(", ");
+
 /**
  * Hours × days matrix of temperatures. Each cell shows the actual temperature,
  * shaded by how it compares to today at the same hour — scan a column for one
@@ -61,7 +76,7 @@ export function TemperatureGrid(props: {
                 >
                   {isNow ? "now" : formatHour(row.hour)}
                 </div>
-                {row.cells.map((cell) => (
+                {row.cells.map((cell, columnIndex) => (
                   <div
                     key={cell.dateKey}
                     className={`py-1.5 tabular-nums ${
@@ -73,8 +88,9 @@ export function TemperatureGrid(props: {
                         : cell.delta == null
                           ? "transparent"
                           : cellBackground(cell.delta, maxAbs),
-                      outline: isNow ? "1px solid rgba(255,255,255,0.25)" : undefined,
-                      outlineOffset: "-1px",
+                      boxShadow: isNow
+                        ? nowRowRing(columnIndex, row.cells.length)
+                        : undefined,
                     }}
                   >
                     {cell.value == null ? "" : `${cell.value}°`}
