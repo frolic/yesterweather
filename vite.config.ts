@@ -13,6 +13,9 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: "autoUpdate",
+      // We register the SW ourselves (see registerServiceWorker.ts) to add
+      // foreground/interval update checks, so skip the auto-injected script.
+      injectRegister: false,
       includeAssets: ["icon.svg"],
       manifest: {
         name: "Yesterweather",
