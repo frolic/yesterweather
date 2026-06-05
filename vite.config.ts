@@ -4,6 +4,10 @@ import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
+  // GITHUB_SHA is set automatically in GitHub Actions; empty for local builds.
+  define: {
+    __COMMIT_SHA__: JSON.stringify(process.env.GITHUB_SHA ?? ""),
+  },
   plugins: [
     react(),
     tailwindcss(),

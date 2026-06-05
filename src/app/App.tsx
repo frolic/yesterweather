@@ -15,6 +15,8 @@ import { UnitToggle } from "../weather/UnitToggle.tsx";
 import { useDisplaySettings } from "../weather/useDisplaySettings.ts";
 import { useForecast } from "../weather/useForecast.ts";
 
+const VERSION = __COMMIT_SHA__ ? __COMMIT_SHA__.slice(0, 7) : "dev";
+
 export function App() {
   const { place, setPlace, locate, locating } = useLocation();
   const { metric, unit, setMetric, setUnit } = useDisplaySettings();
@@ -118,8 +120,9 @@ export function App() {
         )}
       </main>
 
-      <footer className="mt-auto pt-2 text-center text-xs text-slate-600">
-        Data from Open-Meteo · times shown in {data?.timezone ?? "local time"}
+      <footer className="mt-auto space-y-1 pt-12 text-center text-xs text-slate-600">
+        <div>Data from Open-Meteo</div>
+        <div>{VERSION}</div>
       </footer>
     </div>
   );
