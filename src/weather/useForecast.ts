@@ -1,45 +1,38 @@
-import { useEffect, useState } from "react";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import type { Place } from "../location/common.ts";
-import type { Forecast, Unit } from "./common.ts";
+import type { Unit } from "./common.ts";
 import { fetchForecast } from "./fetchForecast.ts";
 
-type ForecastState = {
-  data: Forecast | null;
-  loading: boolean;
-  error: string | null;
-};
+/** How often to silently re-fetch so "now" and current conditions stay live. */
+const REFRESH_MS = 5 * 60 * 1000;
 
 /**
- * Loads the forecast for a place + unit, cancelling in-flight requests when the
- * inputs change so the latest selection always wins.
+ * Loads the forecast for a place + unit via TanStack Query: cached per
+ * place+unit, refetched every few minutes and on window focus/reconnect, with
+ * the previous reading kept on screen during a refresh so there's no flicker.
  */
 export function useForecast(place: Place, unit: Unit) {
-  const [state, setState] = useState<ForecastState>({
-    data: null,
-    loading: true,
-    error: null,
+  const query = useQuery({
+    queryKey: ["forecast", place.latitude, place.longitude, unit],
+    queryFn: ({ signal }) =>
+      fetchForecast({
+        latitude: place.latitude,
+        longitude: place.longitude,
+        unit,
+        signal,
+      }),
+    refetchInterval: REFRESH_MS,
+    placeholderData: keepPreviousData,
   });
 
-  useEffect(() => {
-    const controller = new AbortController();
-    setState((prev) => ({ ...prev, loading: true, error: null }));
-
-    fetchForecast({
-      latitude: place.latitude,
-      longitude: place.longitude,
-      unit,
-      signal: controller.signal,
-    })
-      .then((data) => setState({ data, loading: false, error: null }))
-      .catch((error: unknown) => {
-        if (controller.signal.aborted) return;
-        const message =
-          error instanceof Error ? error.message : "Something went wrong";
-        setState((prev) => ({ ...prev, loading: false, error: message }));
-      });
-
-    return () => controller.abort();
-  }, [place.latitude, place.longitude, unit]);
-
-  return state;
+  return {
+    data: query.data ?? null,
+    loading: query.isPending,
+    error:
+      query.error instanceof Error
+        ? query.error.message
+        : query.error
+          ? "Something went wrong"
+          : null,
+  };
 }
