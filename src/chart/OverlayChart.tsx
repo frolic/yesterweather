@@ -6,8 +6,9 @@ import { dayColor, type DayStyle } from "./dayColor.ts";
 import { formatHour } from "./formatHour.ts";
 import { useElementWidth } from "./useElementWidth.ts";
 
-const HEIGHT = 300;
-const PAD = { top: 16, right: 4, bottom: 28, left: 40 };
+const HEIGHT = 200;
+const PAD = { top: 12, right: 4, bottom: 16, left: 30 };
+const TICK_FONT = 10;
 /** Relative-hour ticks, including 0 (the now hour) at centre. */
 const X_TICKS = [-12, -6, 0, 6, 12];
 
@@ -104,6 +105,11 @@ export function OverlayChart(props: {
     setHoverRel(rel < -12 || rel > 12 ? null : rel);
   };
 
+  // Where the axis crosses midnight, so the date change is visible on the plot.
+  const midnightRel = [-currentHour, 24 - currentHour].find(
+    (rel) => rel > -HALF_WINDOW && rel < HALF_WINDOW && rel !== 0,
+  );
+
   const hoverClockHour =
     hoverRel == null ? null : (((currentHour + hoverRel) % 24) + 24) % 24;
 
@@ -146,12 +152,12 @@ export function OverlayChart(props: {
                   strokeDasharray="3 3"
                 />
                 <text
-                  x={PAD.left - 8}
+                  x={PAD.left - 4}
                   y={yPos(tick)}
                   textAnchor="end"
                   dominantBaseline="middle"
                   fill="#64748b"
-                  fontSize={12}
+                  fontSize={TICK_FONT}
                 >
                   {tick}
                   {axisSuffix}
@@ -163,14 +169,35 @@ export function OverlayChart(props: {
               <text
                 key={rel}
                 x={xPos(rel)}
-                y={HEIGHT - 8}
+                y={HEIGHT - 3}
                 textAnchor={rel === -12 ? "start" : rel === 12 ? "end" : "middle"}
                 fill="#64748b"
-                fontSize={12}
+                fontSize={TICK_FONT}
               >
                 {formatHour((((currentHour + rel) % 24) + 24) % 24)}
               </text>
             ))}
+
+            {midnightRel != null && (
+              <g>
+                <line
+                  x1={xPos(midnightRel)}
+                  x2={xPos(midnightRel)}
+                  y1={PAD.top}
+                  y2={PAD.top + plotHeight}
+                  stroke="#334155"
+                />
+                <text
+                  x={xPos(midnightRel) + (midnightRel > 0 ? -3 : 3)}
+                  y={PAD.top + plotHeight - 3}
+                  textAnchor={midnightRel > 0 ? "end" : "start"}
+                  fill="#475569"
+                  fontSize={TICK_FONT}
+                >
+                  midnight
+                </text>
+              </g>
+            )}
 
             <line
               x1={xPos(0)}
@@ -182,10 +209,10 @@ export function OverlayChart(props: {
             />
             <text
               x={xPos(0)}
-              y={PAD.top - 4}
+              y={PAD.top - 3}
               textAnchor="middle"
               fill="#f8fafc"
-              fontSize={11}
+              fontSize={TICK_FONT}
             >
               now
             </text>
@@ -223,7 +250,7 @@ export function OverlayChart(props: {
                     key={row.day.dateKey}
                     cx={xPos(hoverRel)}
                     cy={yPos(row.value)}
-                    r={4}
+                    r={3}
                     fill={row.style.color}
                     fillOpacity={row.style.opacity}
                   />
@@ -235,25 +262,25 @@ export function OverlayChart(props: {
 
         {hoverRel != null && hoverClockHour != null && hoverRows.length > 0 && (
           <div
-            className="pointer-events-none absolute top-2 z-10 -translate-x-1/2 rounded-xl border border-white/10 bg-slate-900/95 px-3 py-2 text-sm shadow-xl backdrop-blur"
+            className="pointer-events-none absolute top-1 z-10 -translate-x-1/2 rounded-lg border border-white/10 bg-slate-900/95 px-2 py-1 text-xs shadow-xl backdrop-blur"
             style={{
               left: Math.min(
-                Math.max(xPos(hoverRel), PAD.left + 70),
-                width - PAD.right - 70,
+                Math.max(xPos(hoverRel), PAD.left + 55),
+                width - PAD.right - 55,
               ),
             }}
           >
-            <div className="mb-1 font-medium text-slate-300">
+            <div className="mb-0.5 font-medium text-slate-300">
               {formatHour(hoverClockHour)}
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {hoverRows.map((row) => (
                 <div key={row.day.dateKey} className="flex items-center gap-2">
                   <span
                     className="inline-block h-2 w-2 rounded-full"
                     style={{ backgroundColor: row.style.color }}
                   />
-                  <span className="w-20 text-slate-400">{row.day.label}</span>
+                  <span className="w-8 text-slate-400">{row.day.label}</span>
                   <span className="whitespace-nowrap font-semibold tabular-nums text-slate-100">
                     {format(row.value)}
                     {unitSymbol}

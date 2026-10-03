@@ -17,14 +17,14 @@ export function UnitToggle(props: {
       type="button"
       onClick={() => props.onChange(next)}
       aria-label="Toggle Celsius or Fahrenheit"
-      className="inline-flex rounded-full border border-white/10 bg-white/5 p-1 text-sm"
+      className="inline-flex rounded-full border border-white/10 bg-white/5 p-0.5 text-xs"
     >
       {OPTIONS.map((option) => {
         const active = option.value === props.value;
         return (
           <span
             key={option.value}
-            className={`rounded-full px-3 py-1.5 font-medium transition ${
+            className={`rounded-full px-2 py-1 font-medium transition ${
               active ? "bg-white/15 text-white" : "text-slate-400"
             }`}
           >

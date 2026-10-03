@@ -36,7 +36,7 @@ export function App() {
   const view = chartView({ variable, metric, unit, temperatureUnit: unitSymbol });
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-md flex-col gap-4 px-4 pb-10 pt-6">
+    <div className="mx-auto flex min-h-full w-full max-w-md flex-col gap-3 px-3 pb-6 pt-4">
       <PlaceSearch
         place={place}
         onSelect={setPlace}
@@ -44,13 +44,8 @@ export function App() {
         locating={locating}
       />
 
-      <main className="flex flex-col gap-10">
-        <section>
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <MetricToggle value={metric} onChange={setMetric} />
-            <UnitToggle value={unit} onChange={setUnit} />
-          </div>
-
+      <main className="flex flex-col gap-4">
+        <section className="flex flex-col gap-2">
           {error && (
             <div className="py-8 text-center text-sm text-rose-300">{error}</div>
           )}
@@ -72,7 +67,7 @@ export function App() {
 
           {insight && (
             <p
-              className={`mt-4 border-l-2 pl-3 text-sm leading-relaxed ${
+              className={`border-l-2 pl-2 text-xs leading-snug ${
                 insight.delta < 0
                   ? "border-sky-400/60 text-sky-200"
                   : insight.delta > 0
@@ -85,12 +80,17 @@ export function App() {
           )}
         </section>
 
+        <div className="flex items-center justify-between gap-1">
+          <VariableTabs value={variable} onChange={setVariable} />
+          <div className="flex items-center gap-1">
+            <MetricToggle value={metric} onChange={setMetric} />
+            <UnitToggle value={unit} onChange={setUnit} />
+          </div>
+        </div>
+
         {data && (
-          <div className="flex flex-col gap-12">
-            <section className="flex flex-col gap-3">
-              <div className="flex justify-center">
-                <VariableTabs value={variable} onChange={setVariable} />
-              </div>
+          <>
+            <section className="flex flex-col gap-1">
               <DayLegend
                 series={series}
                 hiddenOffsets={hiddenOffsets}
@@ -116,13 +116,12 @@ export function App() {
                 currentHour={data.current.hour}
               />
             </section>
-          </div>
+          </>
         )}
       </main>
 
-      <footer className="mt-auto space-y-1 pt-12 text-center text-xs text-slate-600">
-        <div>Data from Open-Meteo</div>
-        <div>{VERSION}</div>
+      <footer className="mt-auto pt-4 text-center text-[10px] text-slate-600">
+        Data from Open-Meteo · {VERSION}
       </footer>
     </div>
   );

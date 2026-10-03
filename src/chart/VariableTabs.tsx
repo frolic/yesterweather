@@ -1,7 +1,7 @@
 import type { ChartVariable } from "./chartVariable.ts";
 
 const TABS: { value: ChartVariable; label: string }[] = [
-  { value: "temperature", label: "Temperature" },
+  { value: "temperature", label: "Temp" },
   { value: "wind", label: "Wind" },
   { value: "rain", label: "Rain" },
 ];
@@ -12,7 +12,7 @@ export function VariableTabs(props: {
   onChange: (variable: ChartVariable) => void;
 }) {
   return (
-    <div className="flex gap-1 text-sm">
+    <div className="flex gap-0.5 text-xs">
       {TABS.map((tab) => {
         const active = tab.value === props.value;
         return (
@@ -20,7 +20,7 @@ export function VariableTabs(props: {
             key={tab.value}
             type="button"
             onClick={() => props.onChange(tab.value)}
-            className={`rounded-full px-3 py-1 font-medium transition ${
+            className={`rounded-full px-2.5 py-1 font-medium transition ${
               active
                 ? "bg-white/15 text-white"
                 : "text-slate-500 hover:text-slate-300"

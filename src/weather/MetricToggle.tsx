@@ -17,14 +17,14 @@ export function MetricToggle(props: {
       type="button"
       onClick={() => props.onChange(next)}
       aria-label="Toggle feels-like or actual temperature"
-      className="inline-flex rounded-full border border-white/10 bg-white/5 p-1 text-sm"
+      className="inline-flex rounded-full border border-white/10 bg-white/5 p-0.5 text-xs"
     >
       {OPTIONS.map((option) => {
         const active = option.value === props.value;
         return (
           <span
             key={option.value}
-            className={`rounded-full px-4 py-1.5 font-medium transition ${
+            className={`rounded-full px-2.5 py-1 font-medium transition ${
               active ? "bg-amber-400 text-slate-900" : "text-slate-300"
             }`}
           >

@@ -61,7 +61,7 @@ export function PlaceSearch(props: {
           }}
           onFocus={() => setOpen(true)}
           placeholder={place.name}
-          className="w-full rounded-full border border-white/10 bg-white/5 py-2.5 pl-4 pr-12 text-sm text-slate-100 placeholder:text-slate-400 focus:border-amber-400/60 focus:outline-none"
+          className="w-full rounded-full border border-white/10 bg-white/5 py-2 pl-4 pr-12 text-sm text-slate-100 placeholder:text-slate-400 focus:border-amber-400/60 focus:outline-none"
         />
         <button
           type="button"

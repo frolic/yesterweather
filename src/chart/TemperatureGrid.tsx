@@ -28,10 +28,12 @@ const nowRowRing = (columnIndex: number, count: number) =>
     .join(", ");
 
 /**
- * Hours × days matrix of temperatures. Each cell shows the actual temperature,
- * shaded by how it compares to today at the same hour — scan a column for one
- * day's arc, a row to compare that hour across days. Today is the neutral
- * baseline column; the "now" row is highlighted and scrolled into view on mount.
+ * Hours × days matrix of temperatures. Each cell shows the temperature, shaded
+ * by how it compares to today at the same hour, with a blue bar along its
+ * bottom for that hour's rain. Scan a column for one day's arc, a row to
+ * compare that hour across days. The header row carries each column's high and
+ * low; a rule marks where the rows cross midnight. Today is the neutral
+ * baseline column and the "now" row is outlined.
  */
 export function TemperatureGrid(props: {
   series: DaySeries[];
@@ -43,34 +45,53 @@ export function TemperatureGrid(props: {
     [props.series, props.metric, props.currentHour],
   );
   if (!grid) return null;
-  const { days, rows, maxAbs } = grid;
+  const { days, rows, maxAbs, maxRain } = grid;
   const todayLabel = days.find((day) => day.offset === 0)?.label ?? "today";
 
+  const extremes = days.map((_, columnIndex) => {
+    const values = rows
+      .map((row) => row.cells[columnIndex].value)
+      .filter((value): value is number => value != null);
+    return values.length
+      ? { high: Math.max(...values), low: Math.min(...values) }
+      : null;
+  });
+
   return (
-    <div className="flex flex-col gap-3">
-      <div className="overflow-hidden rounded-xl border border-white/5">
+    <div className="flex flex-col gap-1.5">
+      <div className="overflow-hidden rounded-lg border border-white/5">
         <div
-          className="grid text-center text-xs"
-          style={{ gridTemplateColumns: `44px repeat(${days.length}, 1fr)` }}
+          className="grid text-center text-[11px] leading-none"
+          style={{ gridTemplateColumns: `36px repeat(${days.length}, 1fr)` }}
         >
-          <div className="bg-slate-900/95 py-2" />
-          {days.map((day) => (
+          <div className="bg-slate-900/95" />
+          {days.map((day, columnIndex) => (
             <div
               key={day.dateKey}
-              className={`bg-slate-900/95 py-2 font-medium ${
-                day.offset === 0 ? "text-amber-300" : "text-slate-300"
-              }`}
+              className="bg-slate-900/95 py-1 tabular-nums"
             >
-              {day.label}
+              <div
+                className={`font-medium ${
+                  day.offset === 0 ? "text-amber-300" : "text-slate-300"
+                }`}
+              >
+                {day.label}
+              </div>
+              {extremes[columnIndex] && (
+                <div className="mt-0.5 text-[10px] text-slate-500">
+                  {extremes[columnIndex].high}°/{extremes[columnIndex].low}°
+                </div>
+              )}
             </div>
           ))}
 
           {rows.map((row) => {
-            const isNow = row.hour === props.currentHour;
+            const isNow = row.rel === 0;
+            const divider = row.startsDay ? "border-t border-slate-500/60" : "";
             return (
               <Fragment key={row.rel}>
                 <div
-                  className={`py-1.5 pr-1.5 text-right tabular-nums ${
+                  className={`py-1 pr-1 text-right tabular-nums ${divider} ${
                     isNow ? "font-semibold text-white" : "text-slate-500"
                   }`}
                 >
@@ -79,7 +100,7 @@ export function TemperatureGrid(props: {
                 {row.cells.map((cell, columnIndex) => (
                   <div
                     key={cell.dateKey}
-                    className={`py-1.5 tabular-nums ${
+                    className={`relative py-1 tabular-nums ${divider} ${
                       isNow ? "font-medium text-white" : "text-slate-100"
                     }`}
                     style={{
@@ -94,6 +115,15 @@ export function TemperatureGrid(props: {
                     }}
                   >
                     {cell.value == null ? "" : `${cell.value}°`}
+                    {cell.precipitation > 0 && maxRain > 0 && (
+                      <span
+                        className="absolute bottom-0 left-0 h-0.5 bg-sky-300"
+                        style={{
+                          width: `${Math.max(15, (cell.precipitation / maxRain) * 100)}%`,
+                        }}
+                        title={`${cell.precipitation.toFixed(1)} mm`}
+                      />
+                    )}
                   </div>
                 ))}
               </Fragment>
@@ -102,17 +132,18 @@ export function TemperatureGrid(props: {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-slate-500">
+      <div className="flex flex-wrap items-center justify-center gap-x-1.5 text-[10px] text-slate-500">
         <span>colder</span>
         <span
-          className="h-2 w-20 rounded-full"
+          className="h-1.5 w-12 rounded-full"
           style={{
             background:
               "linear-gradient(90deg, rgba(59,130,246,0.8), rgba(148,163,184,0.15), rgba(239,68,68,0.8))",
           }}
         />
-        <span>warmer</span>
-        <span className="ml-1">· shaded vs {todayLabel}, same hour</span>
+        <span>warmer vs {todayLabel}, same hour</span>
+        <span className="ml-1 inline-block h-0.5 w-3 bg-sky-300" />
+        <span>rain</span>
       </div>
     </div>
   );
