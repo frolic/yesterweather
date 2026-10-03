@@ -6,9 +6,9 @@ const STORAGE_KEY = "yesterweather.layout";
 
 const readStored = (): Layout => {
   try {
-    return localStorage.getItem(STORAGE_KEY) === "charts" ? "charts" : "rows";
+    return localStorage.getItem(STORAGE_KEY) === "rows" ? "rows" : "charts";
   } catch {
-    return "rows";
+    return "charts";
   }
 };
 

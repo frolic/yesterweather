@@ -52,10 +52,8 @@ export async function fetchForecast(options: {
   const params = new URLSearchParams({
     latitude: String(latitude),
     longitude: String(longitude),
-    hourly:
-      "temperature_2m,apparent_temperature,wind_speed_10m,precipitation",
-    current:
-      "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code",
+    hourly: "temperature_2m,apparent_temperature,wind_speed_10m,precipitation",
+    current: "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code",
     temperature_unit: unit,
     wind_speed_unit: unit === "fahrenheit" ? "mph" : "kmh",
     timezone: "auto",

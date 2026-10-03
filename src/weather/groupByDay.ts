@@ -26,8 +26,7 @@ const shiftDateKey = (dateKey: string, days: number) => {
 export function groupByDay(forecast: Forecast): DaySeries[] {
   const { hourly, current } = forecast;
   const nowIndex = hourly.findIndex(
-    (reading) =>
-      reading.dateKey === current.dateKey && reading.hour === current.hour,
+    (reading) => reading.dateKey === current.dateKey && reading.hour === current.hour,
   );
   if (nowIndex < 0) return [];
 

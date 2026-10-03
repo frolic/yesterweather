@@ -4,17 +4,38 @@ import { reverseGeocode } from "./reverseGeocode.ts";
 
 const STORAGE_KEY = "yesterweather.place";
 
-const DEFAULT_PLACE: Place = {
+const DEFAULT_PLACE = {
   name: "London",
   region: "England, United Kingdom",
   latitude: 51.5074,
   longitude: -0.1278,
+} satisfies Place;
+
+/** Parses a stored place from JSON, or null when the stored value is not one. */
+const parsePlace = (json: string): Place | null => {
+  const value: unknown = JSON.parse(json);
+  if (
+    !(value instanceof Object) ||
+    !("name" in value && "region" in value) ||
+    !("latitude" in value && "longitude" in value)
+  ) {
+    return null;
+  }
+  const latitude = Number(value.latitude);
+  const longitude = Number(value.longitude);
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+  return {
+    name: String(value.name),
+    region: String(value.region),
+    latitude,
+    longitude,
+  };
 };
 
 const readStored = (): Place | null => {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Place) : null;
+    return raw ? parsePlace(raw) : null;
   } catch {
     return null;
   }
@@ -26,9 +47,7 @@ const readStored = (): Place | null => {
  * position. Falls back to a sensible default on first run.
  */
 export function useLocation() {
-  const [place, setPlaceState] = useState<Place>(
-    () => readStored() ?? DEFAULT_PLACE,
-  );
+  const [place, setPlaceState] = useState<Place>(() => readStored() ?? DEFAULT_PLACE);
   const [locating, setLocating] = useState(false);
 
   useEffect(() => {

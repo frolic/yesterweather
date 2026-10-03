@@ -1,24 +1,25 @@
 import { useRef, useState } from "react";
 import { curveMonotoneX, line } from "d3-shape";
-import type { DaySeries, HourReading, Metric } from "../weather/common.ts";
+import type { DaySeries, Metric } from "../weather/common.ts";
 import { HALF_WINDOW } from "../weather/groupByDay.ts";
 import { dayColor } from "./dayColor.ts";
 import { formatHour } from "./formatHour.ts";
 import { useElementWidth } from "./useElementWidth.ts";
 
-const LABEL_WIDTH = 34;
-const VALUE_WIDTH = 92;
+const LABEL_WIDTH = 40;
+const VALUE_WIDTH = 64;
 const GAP = 6;
-const ROW_HEIGHT = 46;
-const AXIS_HEIGHT = 18;
+const ROW_HEIGHT = 100;
+const ROW_GAP = 14;
+const ROW_PITCH = ROW_HEIGHT + ROW_GAP;
+const AXIS_HEIGHT = 22;
 /** Row inset so the line never touches the row edges. */
-const INSET = 6;
+const INSET = 8;
 const X_TICKS = [-12, -6, 0, 6, 12];
 
-const signed = (value: number) =>
-  `${value > 0 ? "+" : value < 0 ? "−" : "±"}${Math.abs(value)}°`;
+const signed = (value: number) => `${value > 0 ? "+" : value < 0 ? "−" : "±"}${Math.abs(value)}°`;
 const tone = (value: number) =>
-  value > 0 ? "text-amber-300" : value < 0 ? "text-sky-300" : "text-slate-400";
+  value > 0 ? "text-red-400" : value < 0 ? "text-blue-400" : "text-neutral-400";
 
 /**
  * One row per day on a shared −12h … now … +12h axis. Each row draws that
@@ -41,12 +42,9 @@ export function DayRows(props: {
 
   const sparkLeft = LABEL_WIDTH + GAP;
   const sparkWidth = Math.max(0, width - sparkLeft - VALUE_WIDTH - GAP);
-  const xPos = (rel: number) =>
-    sparkLeft + ((rel + HALF_WINDOW) / (HALF_WINDOW * 2)) * sparkWidth;
+  const xPos = (rel: number) => sparkLeft + ((rel + HALF_WINDOW) / (HALF_WINDOW * 2)) * sparkWidth;
 
-  const readings = series.flatMap(
-    (day) => day.slots.filter(Boolean) as HourReading[],
-  );
+  const readings = series.flatMap((day) => day.slots.flatMap((slot) => (slot ? [slot] : [])));
   const values = readings.map((reading) => reading[metric]);
   const min = values.length ? Math.min(...values) : 0;
   const max = values.length ? Math.max(...values) : 1;
@@ -82,7 +80,7 @@ export function DayRows(props: {
     setCursor(Math.max(-HALF_WINDOW, Math.min(HALF_WINDOW, rel)));
   };
 
-  const rowsHeight = series.length * ROW_HEIGHT;
+  const rowsHeight = series.length * ROW_PITCH - ROW_GAP;
 
   return (
     <div
@@ -107,19 +105,16 @@ export function DayRows(props: {
     >
       {width > 0 && (
         <>
-          <svg
-            width={width}
-            height={AXIS_HEIGHT + rowsHeight}
-            className="absolute inset-0"
-          >
+          <svg width={width} height={AXIS_HEIGHT + rowsHeight} className="absolute inset-0">
             {X_TICKS.map((rel) => (
               <text
                 key={rel}
                 x={xPos(rel)}
                 y={AXIS_HEIGHT - 6}
                 textAnchor={rel === -12 ? "start" : rel === 12 ? "end" : "middle"}
-                fill={rel === 0 ? "#f8fafc" : "#64748b"}
-                fontSize={10}
+                fill={rel === 0 ? "#f8fafc" : "#737373"}
+                fontSize={11}
+                fontFamily="ui-monospace, monospace"
                 opacity={Math.abs(rel - cursor) < 3 ? 0 : 1}
               >
                 {rel === 0 ? "now" : formatHour(clockHour(rel))}
@@ -128,29 +123,29 @@ export function DayRows(props: {
 
             {series.map((day, index) => {
               const style = dayColor(day.offset);
-              const top = AXIS_HEIGHT + index * ROW_HEIGHT;
+              const top = AXIS_HEIGHT + index * ROW_PITCH;
               const isToday = day.offset === 0;
               return (
                 <g key={day.dateKey} transform={`translate(0 ${top})`}>
                   <rect
                     x={sparkLeft}
                     width={sparkWidth}
-                    height={ROW_HEIGHT - 2}
-                    fill={isToday ? "rgba(250,204,21,0.05)" : "rgba(255,255,255,0.02)"}
+                    height={ROW_HEIGHT}
+                    fill={isToday ? "rgba(220,181,79,0.07)" : "rgba(255,255,255,0.02)"}
                     rx={4}
                   />
                   {midnightRel != null && (
                     <line
                       x1={xPos(midnightRel)}
                       x2={xPos(midnightRel)}
-                      y2={ROW_HEIGHT - 2}
-                      stroke="#334155"
+                      y2={ROW_HEIGHT}
+                      stroke="#3f3f46"
                     />
                   )}
                   <line
                     x1={xPos(0)}
                     x2={xPos(0)}
-                    y2={ROW_HEIGHT - 2}
+                    y2={ROW_HEIGHT}
                     stroke="#f8fafc55"
                     strokeDasharray="3 3"
                   />
@@ -160,9 +155,9 @@ export function DayRows(props: {
                         key={slot}
                         x={xPos(slot - HALF_WINDOW) - sparkWidth / 60}
                         width={sparkWidth / 30}
-                        y={ROW_HEIGHT - 2 - (reading.precipitation / maxRain) * (ROW_HEIGHT * 0.45)}
+                        y={ROW_HEIGHT - (reading.precipitation / maxRain) * (ROW_HEIGHT * 0.45)}
                         height={(reading.precipitation / maxRain) * (ROW_HEIGHT * 0.45)}
-                        fill="#7dd3fc"
+                        fill="#60a5fa"
                         fillOpacity={0.45}
                       />
                     ) : null,
@@ -181,13 +176,14 @@ export function DayRows(props: {
                     fill="none"
                     stroke={style.color}
                     strokeWidth={isToday ? 2.5 : 2}
+                    strokeDasharray={style.dash}
                     strokeLinecap="round"
                   />
                   {day.slots[cursor + HALF_WINDOW] && (
                     <circle
                       cx={xPos(cursor)}
                       cy={yPos(day.slots[cursor + HALF_WINDOW]![metric])}
-                      r={3}
+                      r={3.5}
                       fill={style.color}
                     />
                   )}
@@ -206,7 +202,7 @@ export function DayRows(props: {
           </svg>
 
           <div
-            className="pointer-events-none absolute top-0 -translate-x-1/2 rounded bg-white px-1 text-[10px] font-semibold leading-[14px] text-slate-900"
+            className="pointer-events-none absolute top-0 -translate-x-1/2 rounded bg-neutral-200 px-1.5 font-mono text-[11px] font-semibold leading-4 text-neutral-900"
             style={{
               left: Math.min(Math.max(xPos(cursor), sparkLeft + 18), sparkLeft + sparkWidth - 18),
             }}
@@ -225,10 +221,10 @@ export function DayRows(props: {
               <div
                 key={day.dateKey}
                 className="pointer-events-none absolute left-0 right-0 flex items-center"
-                style={{ top: AXIS_HEIGHT + index * ROW_HEIGHT, height: ROW_HEIGHT - 2 }}
+                style={{ top: AXIS_HEIGHT + index * ROW_PITCH, height: ROW_HEIGHT }}
               >
                 <span
-                  className={`text-xs ${day.offset === 0 ? "font-semibold" : "font-medium"}`}
+                  className={`text-sm ${day.offset === 0 ? "font-semibold" : "font-medium"}`}
                   style={{ width: LABEL_WIDTH, color: style.color }}
                 >
                   {day.label}
@@ -239,25 +235,25 @@ export function DayRows(props: {
                 >
                   {reading ? (
                     <>
-                      <span className="text-sm font-semibold leading-tight text-slate-100">
+                      <span className="text-base font-semibold leading-tight text-neutral-100">
                         {Math.round(reading[metric])}°
                         {delta != null && (
-                          <span className={`ml-1 text-[10px] font-medium ${tone(delta)}`}>
+                          <span className={`ml-1 text-xs font-medium ${tone(delta)}`}>
                             {signed(delta)}
                           </span>
                         )}
                       </span>
-                      <span className="whitespace-nowrap text-[10px] leading-tight text-slate-400">
+                      <span className="whitespace-nowrap text-xs leading-tight text-neutral-400">
                         {Math.round(reading.windSpeed)} {windUnit}
-                        {reading.precipitation > 0 && (
-                          <span className="text-sky-300">
-                            {" "}· {reading.precipitation.toFixed(1)}mm
-                          </span>
-                        )}
                       </span>
+                      {reading.precipitation > 0 && (
+                        <span className="whitespace-nowrap text-xs leading-tight text-sky-300">
+                          {reading.precipitation.toFixed(1)} mm
+                        </span>
+                      )}
                     </>
                   ) : (
-                    <span className="text-xs text-slate-600">–</span>
+                    <span className="text-sm text-neutral-600">–</span>
                   )}
                 </span>
               </div>
