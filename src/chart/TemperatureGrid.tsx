@@ -68,7 +68,7 @@ export function TemperatureGrid(props: {
           {rows.map((row) => {
             const isNow = row.hour === props.currentHour;
             return (
-              <Fragment key={row.hour}>
+              <Fragment key={row.rel}>
                 <div
                   className={`py-1.5 pr-1.5 text-right tabular-nums ${
                     isNow ? "font-semibold text-white" : "text-slate-500"

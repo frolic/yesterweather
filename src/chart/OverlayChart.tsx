@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { curveMonotoneX, line } from "d3-shape";
 import type { DaySeries, HourReading } from "../weather/common.ts";
+import { HALF_WINDOW } from "../weather/groupByDay.ts";
 import { dayColor, type DayStyle } from "./dayColor.ts";
 import { formatHour } from "./formatHour.ts";
 import { useElementWidth } from "./useElementWidth.ts";
@@ -9,11 +10,6 @@ const HEIGHT = 300;
 const PAD = { top: 16, right: 4, bottom: 28, left: 40 };
 /** Relative-hour ticks, including 0 (the now hour) at centre. */
 const X_TICKS = [-12, -6, 0, 6, 12];
-
-/** Signed hours from now (−12…+12) for a clock hour, given the centre hour.
- * Both edges (−12 and +12) map to the same clock hour, half a day from now. */
-const toRel = (hour: number, center: number) =>
-  ((((hour - center + 12) % 24) + 24) % 24) - 12;
 
 type RelPoint = { rel: number; value: number };
 
@@ -57,7 +53,8 @@ export function OverlayChart(props: {
   let min = Infinity;
   let max = -Infinity;
   for (const day of visible) {
-    for (const reading of day.readings) {
+    for (const reading of day.slots) {
+      if (!reading) continue;
       const current = value(reading);
       if (current < min) min = current;
       if (current > max) max = current;
@@ -83,17 +80,12 @@ export function OverlayChart(props: {
     .y((point) => yPos(point.value))
     .curve(curveMonotoneX);
 
-  // Re-anchor a day's readings to the relative axis, duplicating the half-day
-  // edge so the curve spans the full width symmetrically.
-  const toPoints = (day: DaySeries): RelPoint[] => {
-    const points = day.readings.map((reading) => ({
-      rel: toRel(reading.hour, currentHour),
-      value: value(reading),
-    }));
-    const edge = points.find((point) => point.rel === -12);
-    if (edge) points.push({ rel: 12, value: edge.value });
-    return points.sort((a, b) => a.rel - b.rel);
-  };
+  // A day's window is already one continuous run of hours, so each slot maps
+  // straight onto the relative axis.
+  const toPoints = (day: DaySeries): RelPoint[] =>
+    day.slots.flatMap((reading, index) =>
+      reading ? [{ rel: index - HALF_WINDOW, value: value(reading) }] : [],
+    );
 
   // De-duplicate so a small range (e.g. a flat 0% rain day) can't repeat a tick.
   const yTicks = [
@@ -120,9 +112,7 @@ export function OverlayChart(props: {
       ? []
       : visible
           .map((day) => {
-            const reading = day.readings.find(
-              (entry) => entry.hour === hoverClockHour,
-            );
+            const reading = day.slots[(hoverRel ?? 0) + HALF_WINDOW];
             return {
               day,
               value: reading == null ? null : value(reading),

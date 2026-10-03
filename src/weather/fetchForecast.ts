@@ -42,8 +42,10 @@ export async function fetchForecast(options: {
     latitude,
     longitude,
     unit,
-    pastDays = 2,
-    forecastDays = 3,
+    // One extra day each side so the ±2-day windows (which reach 12h past
+    // their centre hour) are always complete.
+    pastDays = 3,
+    forecastDays = 4,
     signal,
   } = options;
 
