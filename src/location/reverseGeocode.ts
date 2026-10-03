@@ -27,11 +27,8 @@ export async function reverseGeocode(
   if (!response.ok) throw new Error(`Reverse geocode failed (${response.status})`);
 
   const raw: RawReverse = await response.json();
-  const name =
-    raw.city || raw.locality || raw.principalSubdivision || "Current location";
-  const region = [raw.principalSubdivision, raw.countryName]
-    .filter(Boolean)
-    .join(", ");
+  const name = raw.city || raw.locality || raw.principalSubdivision || "Current location";
+  const region = [raw.principalSubdivision, raw.countryName].filter(Boolean).join(", ");
 
   return { name, region, latitude, longitude };
 }

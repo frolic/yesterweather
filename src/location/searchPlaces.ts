@@ -10,14 +10,10 @@ type RawPlace = {
   admin1?: string;
 };
 
-const regionOf = (place: RawPlace) =>
-  [place.admin1, place.country].filter(Boolean).join(", ");
+const regionOf = (place: RawPlace) => [place.admin1, place.country].filter(Boolean).join(", ");
 
 /** Look up places by name via Open-Meteo geocoding, newest query wins. */
-export async function searchPlaces(
-  query: string,
-  signal?: AbortSignal,
-): Promise<Place[]> {
+export async function searchPlaces(query: string, signal?: AbortSignal): Promise<Place[]> {
   const trimmed = query.trim();
   if (trimmed.length < 2) return [];
 

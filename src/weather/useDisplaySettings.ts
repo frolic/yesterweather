@@ -4,7 +4,7 @@ import type { Metric, Unit } from "./common.ts";
 const STORAGE_KEY = "yesterweather.display";
 
 type DisplaySettings = { metric: Metric; unit: Unit };
-const DEFAULTS: DisplaySettings = { metric: "feels", unit: "celsius" };
+const DEFAULTS = { metric: "feels", unit: "celsius" } satisfies DisplaySettings;
 
 const readStored = (): DisplaySettings => {
   try {
@@ -36,8 +36,7 @@ export function useDisplaySettings() {
     }
   }, [settings]);
 
-  const setMetric = (metric: Metric) =>
-    setSettings((prev) => ({ ...prev, metric }));
+  const setMetric = (metric: Metric) => setSettings((prev) => ({ ...prev, metric }));
   const setUnit = (unit: Unit) => setSettings((prev) => ({ ...prev, unit }));
 
   return { metric: settings.metric, unit: settings.unit, setMetric, setUnit };

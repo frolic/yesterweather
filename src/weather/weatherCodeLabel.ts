@@ -1,6 +1,6 @@
 /** Maps a WMO weather code (as returned by Open-Meteo) to an emoji + short
  * text for the current-conditions header. */
-export function weatherCodeLabel(code: number): { icon: string; text: string } {
+export function weatherCodeLabel(code: number) {
   if (code === 0) return { icon: "☀️", text: "Clear" };
   if (code <= 2) return { icon: "🌤️", text: "Partly cloudy" };
   if (code === 3) return { icon: "☁️", text: "Overcast" };

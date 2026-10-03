@@ -11,7 +11,7 @@ const readStored = (): Set<number> => {
     if (!raw) return new Set(DEFAULT_HIDDEN);
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed)
-      ? new Set(parsed.filter((value) => typeof value === "number"))
+      ? new Set<number>(parsed.filter((value) => Number.isInteger(value)))
       : new Set(DEFAULT_HIDDEN);
   } catch {
     return new Set(DEFAULT_HIDDEN);
@@ -36,7 +36,8 @@ export function useHiddenOffsets() {
   const toggleOffset = (offset: number) =>
     setHiddenOffsets((prev) => {
       const next = new Set(prev);
-      next.has(offset) ? next.delete(offset) : next.add(offset);
+      if (next.has(offset)) next.delete(offset);
+      else next.add(offset);
       return next;
     });
 

@@ -42,18 +42,18 @@ export async function fetchForecast(options: {
     latitude,
     longitude,
     unit,
-    pastDays = 2,
-    forecastDays = 3,
+    // One extra day each side so the ±2-day windows (which reach 12h past
+    // their centre hour) are always complete.
+    pastDays = 3,
+    forecastDays = 4,
     signal,
   } = options;
 
   const params = new URLSearchParams({
     latitude: String(latitude),
     longitude: String(longitude),
-    hourly:
-      "temperature_2m,apparent_temperature,wind_speed_10m,precipitation",
-    current:
-      "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code",
+    hourly: "temperature_2m,apparent_temperature,wind_speed_10m,precipitation",
+    current: "temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,weather_code",
     temperature_unit: unit,
     wind_speed_unit: unit === "fahrenheit" ? "mph" : "kmh",
     timezone: "auto",

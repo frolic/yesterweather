@@ -1,10 +1,10 @@
 import type { HourReading, Metric, Unit } from "../weather/common.ts";
 
-/** Which hourly variable the overlay chart plots. */
+/** Hourly variables, each drawn as its own stacked chart. */
 export type ChartVariable = "temperature" | "wind" | "rain";
 
 /** How to read and label a variable on the chart: the value accessor, the
- * tooltip unit, a short axis suffix (kept narrow so it never clips the y-axis),
+ * tooltip unit, the unit shown on each y-axis label,
  * and whether the y-axis should be floored at zero. */
 export type ChartView = {
   value: (reading: HourReading) => number;
@@ -13,8 +13,6 @@ export type ChartView = {
   unitSymbol: string;
   axisSuffix: string;
   clampZero: boolean;
-  /** Fixed y-axis range; when omitted the chart auto-fits to the data. */
-  domain?: [number, number];
 };
 
 const rounded = (value: number) => String(Math.round(value));
@@ -32,7 +30,7 @@ export function chartView(options: {
       value: (reading) => reading.windSpeed,
       format: rounded,
       unitSymbol: unit === "fahrenheit" ? " mph" : " km/h",
-      axisSuffix: "",
+      axisSuffix: unit === "fahrenheit" ? " mph" : " km/h",
       clampZero: true,
     };
   }
@@ -42,7 +40,7 @@ export function chartView(options: {
       value: (reading) => reading.precipitation,
       format: (value) => value.toFixed(1),
       unitSymbol: " mm",
-      axisSuffix: "mm",
+      axisSuffix: " mm",
       clampZero: true,
     };
   }
@@ -51,7 +49,7 @@ export function chartView(options: {
     value: (reading) => reading[metric],
     format: rounded,
     unitSymbol: temperatureUnit,
-    axisSuffix: "°",
+    axisSuffix: temperatureUnit,
     clampZero: false,
   };
 }

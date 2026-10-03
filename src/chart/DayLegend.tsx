@@ -1,14 +1,16 @@
 import type { DaySeries } from "../weather/common.ts";
 import { dayColor } from "./dayColor.ts";
 
-/** Centred legend of day chips; tapping one hides/shows that day's line. */
+/** Row of day toggles above the charts: a short line in the day's colour and
+ * dash, then its name. Tapping one hides or shows that day's line; a hidden
+ * day is dimmed. */
 export function DayLegend(props: {
   series: DaySeries[];
   hiddenOffsets: Set<number>;
   onToggle: (offset: number) => void;
 }) {
   return (
-    <div className="flex flex-wrap justify-center gap-2">
+    <div className="flex justify-between">
       {props.series.map((day) => {
         const style = dayColor(day.offset);
         const hidden = props.hiddenOffsets.has(day.offset);
@@ -16,20 +18,24 @@ export function DayLegend(props: {
           <button
             key={day.dateKey}
             type="button"
+            aria-pressed={!hidden}
             onClick={() => props.onToggle(day.offset)}
-            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition ${
-              hidden
-                ? "border-white/5 bg-transparent text-slate-500"
-                : "border-white/10 bg-white/5 text-slate-200"
+            className={`flex items-center gap-1.5 py-1 text-[13px] font-medium transition ${
+              hidden ? "text-neutral-600" : "text-neutral-200"
             }`}
           >
-            <span
-              className="inline-block h-2.5 w-2.5 rounded-full"
-              style={{
-                backgroundColor: hidden ? "#475569" : style.color,
-                opacity: hidden ? 0.5 : style.opacity,
-              }}
-            />
+            <svg width="18" height="6" aria-hidden="true" className="shrink-0">
+              <line
+                x1="1"
+                x2="17"
+                y1="3"
+                y2="3"
+                stroke={style.color}
+                strokeOpacity={hidden ? 0.35 : 1}
+                strokeWidth={2.5}
+                strokeDasharray={style.dash ? "4 3" : undefined}
+              />
+            </svg>
             {day.label}
           </button>
         );

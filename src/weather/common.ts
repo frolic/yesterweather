@@ -38,11 +38,15 @@ export type Forecast = {
   hourly: HourReading[];
 };
 
-/** One calendar day's worth of readings, positioned relative to today. */
+/** One day's continuous window of readings around "this hour", positioned
+ * relative to today. */
 export type DaySeries = {
+  /** Calendar day that holds the window's centre hour. */
   dateKey: string;
   /** Days from today: -2, -1, 0 (today), +1 … */
   offset: number;
   label: string;
-  readings: HourReading[];
+  /** 25 hourly slots, −12h … now … +12h; slot index = relative hour + 12.
+   * Undefined where the forecast has no reading. Crosses midnight unbroken. */
+  slots: (HourReading | undefined)[];
 };
