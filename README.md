@@ -25,8 +25,11 @@ read against a memory instead of a thermometer.
 - **Warmer or colder, at a glance.** The gap between today and yesterday is
   shaded red where today is warmer and blue where it's colder, and a row of
   numbers up top sums it up: vs yesterday, in 4 hours, the next 12 hours.
-- **Wind & rain too.** Stacked under the temperature on the same axis, so one
-  hover reads all three.
+- **Day rows with a time cursor.** One row per day on the same axis, today's
+  line faint behind each. Drag the cursor to any hour and every row shows that
+  day's temperature, change vs today, wind and rain at that hour.
+- **Wind & rain too.** In the Charts view they stack under the temperature on
+  the same axis, so one hover reads all three.
 
 It remembers your place, units, metric, and which days you're looking at. It's an
 installable PWA, so it lives on your home screen and works mobile-first.

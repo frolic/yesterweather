@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 import { ChartStack } from "../chart/ChartStack.tsx";
 import { DayLegend } from "../chart/DayLegend.tsx";
+import { DayRows } from "../chart/DayRows.tsx";
+import { LayoutToggle } from "../chart/LayoutToggle.tsx";
+import { useLayout } from "../chart/useLayout.ts";
 import { useHiddenOffsets } from "../chart/useHiddenOffsets.ts";
 import { PlaceSearch } from "../location/PlaceSearch.tsx";
 import { useLocation } from "../location/useLocation.ts";
@@ -17,6 +20,7 @@ export function App() {
   const { place, setPlace, locate, locating } = useLocation();
   const { metric, unit, setMetric, setUnit } = useDisplaySettings();
   const { hiddenOffsets, toggleOffset } = useHiddenOffsets();
+  const { layout, setLayout } = useLayout();
 
   const { data, loading, error } = useForecast(place, unit);
 
@@ -57,19 +61,33 @@ export function App() {
               windUnit={windUnit}
             />
             <section className="flex flex-col gap-1">
-              <DayLegend
-                series={series}
-                hiddenOffsets={hiddenOffsets}
-                onToggle={toggleOffset}
-              />
-              <ChartStack
-                series={series}
-                metric={metric}
-                unit={unit}
-                temperatureUnit={data.temperatureUnit}
-                currentHour={data.current.hour}
-                hiddenOffsets={hiddenOffsets}
-              />
+              <div className="flex justify-end">
+                <LayoutToggle value={layout} onChange={setLayout} />
+              </div>
+              {layout === "rows" ? (
+                <DayRows
+                  series={series}
+                  metric={metric}
+                  currentHour={data.current.hour}
+                  windUnit={windUnit}
+                />
+              ) : (
+                <>
+                  <DayLegend
+                    series={series}
+                    hiddenOffsets={hiddenOffsets}
+                    onToggle={toggleOffset}
+                  />
+                  <ChartStack
+                    series={series}
+                    metric={metric}
+                    unit={unit}
+                    temperatureUnit={data.temperatureUnit}
+                    currentHour={data.current.hour}
+                    hiddenOffsets={hiddenOffsets}
+                  />
+                </>
+              )}
             </section>
           </>
         )}
