@@ -1,7 +1,7 @@
 import type { Metric } from "./common.ts";
 
 const OPTIONS: { value: Metric; label: string }[] = [
-  { value: "feels", label: "Feels like" },
+  { value: "feels", label: "Feels" },
   { value: "actual", label: "Actual" },
 ];
 

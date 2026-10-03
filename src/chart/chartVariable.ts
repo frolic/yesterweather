@@ -1,6 +1,6 @@
 import type { HourReading, Metric, Unit } from "../weather/common.ts";
 
-/** Which hourly variable the overlay chart plots. */
+/** Hourly variables, each drawn as its own stacked chart. */
 export type ChartVariable = "temperature" | "wind" | "rain";
 
 /** How to read and label a variable on the chart: the value accessor, the
@@ -13,8 +13,6 @@ export type ChartView = {
   unitSymbol: string;
   axisSuffix: string;
   clampZero: boolean;
-  /** Fixed y-axis range; when omitted the chart auto-fits to the data. */
-  domain?: [number, number];
 };
 
 const rounded = (value: number) => String(Math.round(value));
@@ -42,7 +40,7 @@ export function chartView(options: {
       value: (reading) => reading.precipitation,
       format: (value) => value.toFixed(1),
       unitSymbol: " mm",
-      axisSuffix: "mm",
+      axisSuffix: "",
       clampZero: true,
     };
   }
