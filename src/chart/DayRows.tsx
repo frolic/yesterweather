@@ -2,7 +2,7 @@ import { curveMonotoneX, line } from "d3-shape";
 import type { DaySeries, Metric } from "../weather/common.ts";
 import { HALF_WINDOW } from "../weather/groupByDay.ts";
 import { dayColor } from "./dayColor.ts";
-import { TIME_AXIS_HEIGHT, TimeAxis } from "./TimeAxis.tsx";
+import { clockLineRels, TIME_AXIS_HEIGHT, TimeAxis } from "./TimeAxis.tsx";
 import { useElementWidth } from "./useElementWidth.ts";
 import { useScrub } from "./useScrub.ts";
 
@@ -64,9 +64,7 @@ export function DayRows(props: {
   const todayPath = today ? pathOf(today) : "";
   const todayAtCursor = today?.slots[cursor + HALF_WINDOW]?.[metric];
 
-  const midnightRel = [-currentHour, 24 - currentHour].find(
-    (rel) => rel > -HALF_WINDOW && rel < HALF_WINDOW && rel !== 0,
-  );
+  const clockLines = clockLineRels(currentHour);
   const rowsHeight = series.length * ROW_PITCH - ROW_GAP;
 
   return (
@@ -92,14 +90,15 @@ export function DayRows(props: {
                     fill={isToday ? "rgba(220,181,79,0.07)" : "rgba(255,255,255,0.02)"}
                     rx={4}
                   />
-                  {midnightRel != null && (
+                  {clockLines.map((rel) => (
                     <line
-                      x1={xPos(midnightRel)}
-                      x2={xPos(midnightRel)}
+                      key={rel}
+                      x1={xPos(rel)}
+                      x2={xPos(rel)}
                       y2={ROW_HEIGHT}
                       stroke="#3f3f46"
                     />
-                  )}
+                  ))}
                   <line
                     x1={xPos(0)}
                     x2={xPos(0)}

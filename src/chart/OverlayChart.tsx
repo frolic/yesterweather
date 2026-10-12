@@ -2,6 +2,7 @@ import { curveMonotoneX, line } from "d3-shape";
 import type { DaySeries, HourReading } from "../weather/common.ts";
 import { HALF_WINDOW } from "../weather/groupByDay.ts";
 import { dayColor } from "./dayColor.ts";
+import { clockLineRels } from "./TimeAxis.tsx";
 import { useElementWidth } from "./useElementWidth.ts";
 
 /** Space around the plot: the y-axis labels sit in the left inset. */
@@ -89,10 +90,8 @@ export function OverlayChart(props: {
   // Paint order: the farthest days first and today last, so gold is always on top.
   const paintOrder = [...visible].sort((a, b) => Math.abs(b.offset) - Math.abs(a.offset));
 
-  // Where the axis crosses midnight, so the date change is visible on the plot.
-  const midnightRel = [-currentHour, 24 - currentHour].find(
-    (rel) => rel > -HALF_WINDOW && rel < HALF_WINDOW && rel !== 0,
-  );
+  // 12am and 12pm, so the date change and the day's halves show on the plot.
+  const clockLines = clockLineRels(currentHour);
 
   const cursorDots = visible.flatMap((day) => {
     const reading = day.slots[cursor + HALF_WINDOW];
@@ -133,15 +132,16 @@ export function OverlayChart(props: {
             </g>
           ))}
 
-          {midnightRel != null && (
+          {clockLines.map((rel) => (
             <line
-              x1={xPos(midnightRel)}
-              x2={xPos(midnightRel)}
+              key={rel}
+              x1={xPos(rel)}
+              x2={xPos(rel)}
               y1={PAD.top}
               y2={plotBottom}
               stroke="#3f3f46"
             />
-          )}
+          ))}
           <line
             x1={xPos(0)}
             x2={xPos(0)}
