@@ -5,6 +5,8 @@
  * share one colour; the day two away is dashed and a little thinner. */
 export type DayStyle = {
   color: string;
+  /** A lighter tone of the colour for text, so small values stay readable. */
+  text: string;
   width: number;
   opacity: number;
   dash?: string;
@@ -13,17 +15,19 @@ export type DayStyle = {
 const PAST = "#6e737b";
 const TODAY = "#f2c94c";
 const FUTURE = "#1fa596";
+const PAST_TEXT = "#a1a5ab";
+const FUTURE_TEXT = "#3cc4b4";
 const FAR_DASH = "5 4";
 
 const STYLES = new Map<number, DayStyle>([
-  [-2, { color: PAST, width: 1.75, opacity: 1, dash: FAR_DASH }],
-  [-1, { color: PAST, width: 1.75, opacity: 1 }],
-  [0, { color: TODAY, width: 3, opacity: 1 }],
-  [1, { color: FUTURE, width: 1.75, opacity: 1 }],
-  [2, { color: FUTURE, width: 1.75, opacity: 1, dash: FAR_DASH }],
+  [-2, { color: PAST, text: PAST_TEXT, width: 1.75, opacity: 1, dash: FAR_DASH }],
+  [-1, { color: PAST, text: PAST_TEXT, width: 1.75, opacity: 1 }],
+  [0, { color: TODAY, text: TODAY, width: 3, opacity: 1 }],
+  [1, { color: FUTURE, text: FUTURE_TEXT, width: 1.75, opacity: 1 }],
+  [2, { color: FUTURE, text: FUTURE_TEXT, width: 1.75, opacity: 1, dash: FAR_DASH }],
 ]);
 
-const FALLBACK = { color: "#a3a3a3", width: 1.5, opacity: 1 } satisfies DayStyle;
+const FALLBACK = { color: "#a3a3a3", text: "#a3a3a3", width: 1.5, opacity: 1 } satisfies DayStyle;
 
 export function dayColor(offset: number): DayStyle {
   return STYLES.get(offset) ?? FALLBACK;
