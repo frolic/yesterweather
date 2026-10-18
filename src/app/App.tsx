@@ -31,7 +31,7 @@ export function App() {
   const windUnit = unit === "fahrenheit" ? "mph" : "km/h";
 
   return (
-    <div className="mx-auto flex min-h-full w-full max-w-md flex-col gap-4 px-5 pb-3 pt-4">
+    <div className="mx-auto flex min-h-full w-full max-w-md flex-col gap-3 px-5 pb-3 pt-2">
       <Header
         place={place}
         onSelect={setPlace}
@@ -41,10 +41,9 @@ export function App() {
         onMetricChange={setMetric}
         unit={unit}
         onUnitChange={setUnit}
-        now={data?.current}
       />
 
-      <main className="flex flex-col gap-4">
+      <main className="flex flex-col gap-3">
         {error && <div className="py-8 text-center text-sm text-red-300">{error}</div>}
 
         {!error && loading && !data && (
@@ -56,7 +55,7 @@ export function App() {
         {!error && data && (
           <>
             <CurrentConditions forecast={data} metric={metric} />
-            <section className="flex flex-col gap-3">
+            <section className="flex flex-col gap-2">
               <Tabs label="View" options={LAYOUTS} value={layout} onChange={setLayout} />
               {layout === "rows" ? (
                 <DayRows
