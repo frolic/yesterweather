@@ -22,8 +22,8 @@ export default defineConfig({
         short_name: "Yesterweather",
         description:
           "Compare how today will feel against the past few days you actually lived through.",
-        theme_color: "#0b1120",
-        background_color: "#0b1120",
+        theme_color: "#0e0f11",
+        background_color: "#0e0f11",
         display: "standalone",
         start_url: "/",
         icons: [
