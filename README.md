@@ -29,7 +29,7 @@ read against a memory instead of a thermometer.
   line faint behind each. Drag sideways to move the cursor to any hour and
   every row shows that day's temperature, change vs today, wind and rain at
   that hour; let go and it springs back to now.
-- **Wind & rain too.** In the Elements view they stack under the temperature on
+- **Rain & wind too.** In the Elements view they stack under the temperature on
   the same axis. Each chart's heading reads out every day's value at the
   cursor, and one drag (or hover) moves it through all three.
 

@@ -7,7 +7,7 @@ import { TimeAxis } from "./TimeAxis.tsx";
 import { useElementWidth } from "./useElementWidth.ts";
 import { useScrub } from "./useScrub.ts";
 
-const LANES: ChartVariable[] = ["temperature", "wind", "rain"];
+const LANES: ChartVariable[] = ["temperature", "rain", "wind"];
 const HEADINGS: Record<ChartVariable, string> = {
   temperature: "Temperature",
   wind: "Wind",
@@ -18,7 +18,7 @@ const HEADINGS: Record<ChartVariable, string> = {
 const PLOT_HEIGHT = 110;
 
 /**
- * Temperature, wind and rain as stacked charts on one shared −12h…+12h axis,
+ * Temperature, rain and wind as stacked charts on one shared −12h…+12h axis,
  * so all three read together without tabs. One time cursor runs through all
  * of them: it rests at now, and dragging (or hovering) anywhere on the stack
  * moves it. Each chart's heading reads out every shown day's value at the
