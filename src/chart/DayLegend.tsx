@@ -20,7 +20,7 @@ export function DayLegend(props: {
             type="button"
             aria-pressed={!hidden}
             onClick={() => props.onToggle(day.offset)}
-            className={`flex items-center gap-1.5 py-1 text-[13px] font-medium transition ${
+            className={`flex items-center gap-1.5 py-0.5 text-[13px] font-medium transition ${
               hidden ? "text-neutral-600" : "text-neutral-200"
             }`}
           >

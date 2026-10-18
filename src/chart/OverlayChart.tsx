@@ -1,16 +1,14 @@
 import { curveMonotoneX, line } from "d3-shape";
 import type { DaySeries, HourReading } from "../weather/common.ts";
 import { HALF_WINDOW } from "../weather/groupByDay.ts";
-import { dayColor, type DayStyle } from "./dayColor.ts";
-import { formatHour } from "./formatHour.ts";
+import { dayColor } from "./dayColor.ts";
+import { clockLineRels } from "./TimeAxis.tsx";
 import { useElementWidth } from "./useElementWidth.ts";
 
-const PAD = { top: 8, right: 6, bottom: 4, left: 54 };
+/** Space around the plot: the y-axis labels sit in the left inset. */
+export const PAD = { top: 4, right: 6, bottom: 4, left: 54 };
 const MONO = "ui-monospace, SFMono-Regular, Menlo, monospace";
-const AXIS_HEIGHT = 16;
 const TICK_FONT = 11;
-/** Relative-hour ticks, including 0 (the now hour) at centre. */
-const X_TICKS = [-12, -6, 0, 6, 12];
 
 type RelPoint = { rel: number; value: number };
 
@@ -19,47 +17,39 @@ type RelPoint = { rel: number; value: number };
  * now (−12h … now … +12h), so every day's curve is aligned by time-of-day and
  * today reads against the days you just lived through. The plotted value is
  * supplied via `value`, so the same chart serves temperature, wind, and rain;
- * several are stacked on one page and share a hover position. Rendered as hand-built SVG (only d3-shape's curves are borrowed).
+ * several are stacked on one page and share one time cursor, which marks each
+ * day's value with a dot. Rendered as hand-built SVG (only d3-shape's curves are borrowed).
  */
 export function OverlayChart(props: {
   series: DaySeries[];
   value: (reading: HourReading) => number;
-  format: (value: number) => string;
-  unitSymbol: string;
   axisSuffix: string;
   clampZero: boolean;
   currentHour: number;
   hiddenOffsets: Set<number>;
-  /** Height of the plot area alone; padding and the time axis are added. */
+  /** Height of the plot area alone; padding is added. */
   plotHeight: number;
-  /** Draw the clock-hour labels under the plot (the bottom chart only). */
-  timeAxis?: boolean;
-  /** Shared hover position in hours from now, or null. */
-  hoverRel: number | null;
-  onHover: (rel: number | null) => void;
-  /** Show the tooltip here (the chart under the pointer). */
-  showTooltip: boolean;
+  /** Shared time cursor in hours from now; 0 while it rests at now. */
+  cursor: number;
+  /** Draw the cursor line (while it is dragged or hovered). */
+  scrubbing: boolean;
 }) {
   const {
     series,
     value,
-    format,
-    unitSymbol,
     axisSuffix,
     clampZero,
     currentHour,
     hiddenOffsets,
     plotHeight,
-    timeAxis = false,
-    hoverRel,
-    onHover,
-    showTooltip,
+    cursor,
+    scrubbing,
   } = props;
   const { ref, width } = useElementWidth();
 
   const visible = series.filter((day) => !hiddenOffsets.has(day.offset));
   const plotWidth = Math.max(0, width - PAD.left - PAD.right);
-  const height = plotHeight + PAD.top + PAD.bottom + (timeAxis ? AXIS_HEIGHT : 0);
+  const height = plotHeight + PAD.top + PAD.bottom;
 
   let min = Infinity;
   let max = -Infinity;
@@ -100,48 +90,18 @@ export function OverlayChart(props: {
   // Paint order: the farthest days first and today last, so gold is always on top.
   const paintOrder = [...visible].sort((a, b) => Math.abs(b.offset) - Math.abs(a.offset));
 
-  const onPointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
-    if (plotWidth <= 0) return;
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const ratio = (event.clientX - bounds.left - PAD.left) / plotWidth;
-    const rel = Math.round(ratio * 24 - 12);
-    onHover(rel < -12 || rel > 12 ? null : rel);
-  };
+  // 12am and 12pm, so the date change and the day's halves show on the plot.
+  const clockLines = clockLineRels(currentHour);
 
-  // Where the axis crosses midnight, so the date change is visible on the plot.
-  const midnightRel = [-currentHour, 24 - currentHour].find(
-    (rel) => rel > -HALF_WINDOW && rel < HALF_WINDOW && rel !== 0,
-  );
-
-  const hoverClockHour = hoverRel == null ? null : (((currentHour + hoverRel) % 24) + 24) % 24;
-
-  const hoverRows =
-    hoverRel == null
-      ? []
-      : visible
-          .map((day) => {
-            const reading = day.slots[hoverRel + HALF_WINDOW];
-            return {
-              day,
-              value: reading == null ? null : value(reading),
-              style: dayColor(day.offset),
-            };
-          })
-          .filter(
-            (row): row is { day: DaySeries; value: number; style: DayStyle } => row.value != null,
-          )
-          .sort((a, b) => b.day.offset - a.day.offset);
+  const cursorDots = visible.flatMap((day) => {
+    const reading = day.slots[cursor + HALF_WINDOW];
+    return reading ? [{ day, value: value(reading), style: dayColor(day.offset) }] : [];
+  });
 
   return (
     <div ref={ref} className="relative w-full" style={{ height }}>
       {width > 0 && (
-        <svg
-          width={width}
-          height={height}
-          onPointerMove={onPointerMove}
-          onPointerLeave={() => onHover(null)}
-          className="touch-none"
-        >
+        <svg width={width} height={height} className="block">
           {/* Same quiet panel as the Days rows, in place of grid lines. */}
           <rect
             x={PAD.left}
@@ -157,7 +117,11 @@ export function OverlayChart(props: {
                 x={PAD.left - 4}
                 y={yPos(tick)}
                 textAnchor="end"
-                dominantBaseline="middle"
+                // The end ticks sit inside the plot, so they never touch the
+                // heading above or the chart below.
+                dominantBaseline={
+                  tick === yMax ? "hanging" : tick === yMin ? "text-after-edge" : "middle"
+                }
                 fill="#737373"
                 fontSize={TICK_FONT}
                 fontFamily={MONO}
@@ -168,45 +132,16 @@ export function OverlayChart(props: {
             </g>
           ))}
 
-          {timeAxis &&
-            X_TICKS.map((rel) => (
-              <text
-                key={rel}
-                x={xPos(rel)}
-                y={height - 3}
-                textAnchor={rel === -12 ? "start" : rel === 12 ? "end" : "middle"}
-                fill={rel === 0 ? "#f8fafc" : "#737373"}
-                fontSize={TICK_FONT}
-                fontFamily={MONO}
-              >
-                {rel === 0 ? "now" : formatHour((((currentHour + rel) % 24) + 24) % 24)}
-              </text>
-            ))}
-
-          {midnightRel != null && (
+          {clockLines.map((rel) => (
             <line
-              x1={xPos(midnightRel)}
-              x2={xPos(midnightRel)}
+              key={rel}
+              x1={xPos(rel)}
+              x2={xPos(rel)}
               y1={PAD.top}
               y2={plotBottom}
               stroke="#3f3f46"
             />
-          )}
-          {midnightRel != null &&
-            timeAxis &&
-            X_TICKS.every((tick) => Math.abs(tick - midnightRel) > 3) && (
-              <text
-                x={xPos(midnightRel)}
-                y={height - 3}
-                textAnchor="middle"
-                fill="#525252"
-                fontSize={TICK_FONT}
-                fontFamily={MONO}
-              >
-                12am
-              </text>
-            )}
-
+          ))}
           <line
             x1={xPos(0)}
             x2={xPos(0)}
@@ -235,59 +170,31 @@ export function OverlayChart(props: {
             );
           })}
 
-          {hoverRel != null && hoverRows.length > 0 && (
-            <>
-              <line
-                x1={xPos(hoverRel)}
-                x2={xPos(hoverRel)}
-                y1={PAD.top}
-                y2={plotBottom}
-                stroke="#f8fafc"
+          {scrubbing && (
+            <line
+              x1={xPos(cursor)}
+              x2={xPos(cursor)}
+              y1={PAD.top}
+              y2={plotBottom}
+              stroke="#f8fafc"
+              strokeWidth={1.5}
+            />
+          )}
+          {/* Paint order as the lines: today's dot last, on top. */}
+          {[...cursorDots]
+            .sort((a, b) => Math.abs(b.day.offset) - Math.abs(a.day.offset))
+            .map((dot) => (
+              <circle
+                key={dot.day.dateKey}
+                cx={xPos(cursor)}
+                cy={yPos(dot.value)}
+                r={dot.day.offset === 0 ? 4 : 3}
+                fill={dot.style.color}
+                stroke="#0e0f11"
                 strokeWidth={1.5}
               />
-              {[...hoverRows]
-                .sort((a, b) => Math.abs(b.day.offset) - Math.abs(a.day.offset))
-                .map((row) => (
-                  <circle
-                    key={row.day.dateKey}
-                    cx={xPos(hoverRel)}
-                    cy={yPos(row.value)}
-                    r={3.5}
-                    fill={row.style.color}
-                    fillOpacity={row.style.opacity}
-                  />
-                ))}
-            </>
-          )}
-        </svg>
-      )}
-
-      {showTooltip && hoverRel != null && hoverClockHour != null && hoverRows.length > 0 && (
-        <div
-          className="pointer-events-none absolute top-1 z-10 -translate-x-1/2 rounded-lg border border-white/10 bg-neutral-900/95 px-2 py-1 text-xs shadow-xl backdrop-blur"
-          style={{
-            left: Math.min(Math.max(xPos(hoverRel), PAD.left + 50), PAD.left + plotWidth - 50),
-          }}
-        >
-          <div className="mb-0.5 font-mono font-medium text-neutral-300">
-            {formatHour(hoverClockHour)}
-          </div>
-          <div className="space-y-0.5">
-            {hoverRows.map((row) => (
-              <div key={row.day.dateKey} className="flex items-center gap-2">
-                <span
-                  className="inline-block h-2 w-2 rounded-full"
-                  style={{ backgroundColor: row.style.color }}
-                />
-                <span className="w-16 text-neutral-400">{row.day.label}</span>
-                <span className="whitespace-nowrap font-semibold tabular-nums text-neutral-100">
-                  {format(row.value)}
-                  {unitSymbol}
-                </span>
-              </div>
             ))}
-          </div>
-        </div>
+        </svg>
       )}
     </div>
   );

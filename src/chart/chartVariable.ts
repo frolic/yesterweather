@@ -4,11 +4,11 @@ import type { HourReading, Metric, Unit } from "../weather/common.ts";
 export type ChartVariable = "temperature" | "wind" | "rain";
 
 /** How to read and label a variable on the chart: the value accessor, the
- * tooltip unit, the unit shown on each y-axis label,
+ * read-out unit, the unit shown on each y-axis label,
  * and whether the y-axis should be floored at zero. */
 export type ChartView = {
   value: (reading: HourReading) => number;
-  /** Formats a value for the tooltip (e.g. integer degrees, one-decimal mm). */
+  /** Formats a value for the heading read-out (e.g. integer degrees, one-decimal mm). */
   format: (value: number) => string;
   unitSymbol: string;
   axisSuffix: string;

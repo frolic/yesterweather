@@ -1,21 +1,20 @@
-import { useRef, useState } from "react";
 import { curveMonotoneX, line } from "d3-shape";
 import type { DaySeries, Metric } from "../weather/common.ts";
 import { HALF_WINDOW } from "../weather/groupByDay.ts";
 import { dayColor } from "./dayColor.ts";
-import { formatHour } from "./formatHour.ts";
+import { clockLineRels, TIME_AXIS_HEIGHT, TimeAxis } from "./TimeAxis.tsx";
 import { useElementWidth } from "./useElementWidth.ts";
+import { useScrub } from "./useScrub.ts";
 
 const LABEL_WIDTH = 40;
 const VALUE_WIDTH = 64;
 const GAP = 6;
-const ROW_HEIGHT = 100;
-const ROW_GAP = 14;
+const ROW_HEIGHT = 80;
+const ROW_GAP = 12;
 const ROW_PITCH = ROW_HEIGHT + ROW_GAP;
-const AXIS_HEIGHT = 22;
+const AXIS_HEIGHT = TIME_AXIS_HEIGHT + 4;
 /** Row inset so the line never touches the row edges. */
 const INSET = 8;
-const X_TICKS = [-12, -6, 0, 6, 12];
 
 const signed = (value: number) => `${value > 0 ? "+" : value < 0 ? "−" : "±"}${Math.abs(value)}°`;
 const tone = (value: number) =>
@@ -24,7 +23,7 @@ const tone = (value: number) =>
 /**
  * One row per day on a shared −12h … now … +12h axis. Each row draws that
  * day's temperature line (today's line sits faintly behind it for comparison)
- * and its hourly rain as bars. A time cursor runs through every row: it starts
+ * and its hourly rain as bars. A time cursor runs through every row: it rests
  * at now and can be dragged (or hovered, with a mouse) to any hour, and each
  * row's right-hand column shows that day's temperature, change vs today, wind
  * and rain at the cursor. All rows share one temperature scale.
@@ -37,11 +36,9 @@ export function DayRows(props: {
 }) {
   const { series, metric, currentHour, windUnit } = props;
   const { ref, width } = useElementWidth();
-  const [cursor, setCursor] = useState(0);
-  const dragging = useRef(false);
-
   const sparkLeft = LABEL_WIDTH + GAP;
   const sparkWidth = Math.max(0, width - sparkLeft - VALUE_WIDTH - GAP);
+  const { cursor, active, handlers, style: scrubStyle } = useScrub({ left: sparkLeft, width: sparkWidth });
   const xPos = (rel: number) => sparkLeft + ((rel + HALF_WINDOW) / (HALF_WINDOW * 2)) * sparkWidth;
 
   const readings = series.flatMap((day) => day.slots.flatMap((slot) => (slot ? [slot] : [])));
@@ -67,60 +64,19 @@ export function DayRows(props: {
   const todayPath = today ? pathOf(today) : "";
   const todayAtCursor = today?.slots[cursor + HALF_WINDOW]?.[metric];
 
-  const midnightRel = [-currentHour, 24 - currentHour].find(
-    (rel) => rel > -HALF_WINDOW && rel < HALF_WINDOW && rel !== 0,
-  );
-  const clockHour = (rel: number) => (((currentHour + rel) % 24) + 24) % 24;
-
-  const moveTo = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (sparkWidth <= 0) return;
-    const bounds = event.currentTarget.getBoundingClientRect();
-    const ratio = (event.clientX - bounds.left - sparkLeft) / sparkWidth;
-    const rel = Math.round(ratio * HALF_WINDOW * 2 - HALF_WINDOW);
-    setCursor(Math.max(-HALF_WINDOW, Math.min(HALF_WINDOW, rel)));
-  };
-
+  const clockLines = clockLineRels(currentHour);
   const rowsHeight = series.length * ROW_PITCH - ROW_GAP;
 
   return (
     <div
       ref={ref}
-      className="relative select-none"
-      style={{ height: AXIS_HEIGHT + rowsHeight, touchAction: "pan-y" }}
-      onPointerDown={(event) => {
-        dragging.current = true;
-        event.currentTarget.setPointerCapture(event.pointerId);
-        moveTo(event);
-      }}
-      onPointerMove={(event) => {
-        if (dragging.current || event.pointerType === "mouse") moveTo(event);
-      }}
-      onPointerUp={() => {
-        dragging.current = false;
-      }}
-      onPointerCancel={() => {
-        dragging.current = false;
-      }}
-      onDoubleClick={() => setCursor(0)}
+      className="relative"
+      style={{ ...scrubStyle, height: AXIS_HEIGHT + rowsHeight }}
+      {...handlers}
     >
       {width > 0 && (
         <>
           <svg width={width} height={AXIS_HEIGHT + rowsHeight} className="absolute inset-0">
-            {X_TICKS.map((rel) => (
-              <text
-                key={rel}
-                x={xPos(rel)}
-                y={AXIS_HEIGHT - 6}
-                textAnchor={rel === -12 ? "start" : rel === 12 ? "end" : "middle"}
-                fill={rel === 0 ? "#f8fafc" : "#737373"}
-                fontSize={11}
-                fontFamily="ui-monospace, monospace"
-                opacity={Math.abs(rel - cursor) < 3 ? 0 : 1}
-              >
-                {rel === 0 ? "now" : formatHour(clockHour(rel))}
-              </text>
-            ))}
-
             {series.map((day, index) => {
               const style = dayColor(day.offset);
               const top = AXIS_HEIGHT + index * ROW_PITCH;
@@ -134,14 +90,15 @@ export function DayRows(props: {
                     fill={isToday ? "rgba(220,181,79,0.07)" : "rgba(255,255,255,0.02)"}
                     rx={4}
                   />
-                  {midnightRel != null && (
+                  {clockLines.map((rel) => (
                     <line
-                      x1={xPos(midnightRel)}
-                      x2={xPos(midnightRel)}
+                      key={rel}
+                      x1={xPos(rel)}
+                      x2={xPos(rel)}
                       y2={ROW_HEIGHT}
                       stroke="#3f3f46"
                     />
-                  )}
+                  ))}
                   <line
                     x1={xPos(0)}
                     x2={xPos(0)}
@@ -191,23 +148,25 @@ export function DayRows(props: {
               );
             })}
 
-            <line
-              x1={xPos(cursor)}
-              x2={xPos(cursor)}
-              y1={AXIS_HEIGHT - 2}
-              y2={AXIS_HEIGHT + rowsHeight}
-              stroke="#f8fafc"
-              strokeWidth={1.5}
-            />
+            {active && (
+              <line
+                x1={xPos(cursor)}
+                x2={xPos(cursor)}
+                y1={AXIS_HEIGHT}
+                y2={AXIS_HEIGHT + rowsHeight}
+                stroke="#f8fafc"
+                strokeWidth={1.5}
+              />
+            )}
           </svg>
 
-          <div
-            className="pointer-events-none absolute top-0 -translate-x-1/2 rounded bg-neutral-200 px-1.5 font-mono text-[11px] font-semibold leading-4 text-neutral-900"
-            style={{
-              left: Math.min(Math.max(xPos(cursor), sparkLeft + 18), sparkLeft + sparkWidth - 18),
-            }}
-          >
-            {cursor === 0 ? "now" : formatHour(clockHour(cursor))}
+          <div className="absolute inset-x-0 top-0">
+            <TimeAxis
+              plotLeft={sparkLeft}
+              plotWidth={sparkWidth}
+              currentHour={currentHour}
+              cursor={cursor}
+            />
           </div>
 
           {series.map((day, index) => {
@@ -225,7 +184,7 @@ export function DayRows(props: {
               >
                 <span
                   className={`text-sm ${day.offset === 0 ? "font-semibold" : "font-medium"}`}
-                  style={{ width: LABEL_WIDTH, color: style.color }}
+                  style={{ width: LABEL_WIDTH, color: style.text }}
                 >
                   {day.label}
                 </span>
